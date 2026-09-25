@@ -33,3 +33,18 @@ async def send_business_message(
     response.raise_for_status()
 
     return response.json()
+
+async def get_business_connection(
+    business_connection_id: str,
+) -> dict:
+    async with httpx.AsyncClient() as client:
+        response = await client.get(
+            f"{TELEGRAM_API_URL}/getBusinessConnection",
+            params={
+                "business_connection_id": business_connection_id,
+            },
+        )
+
+    response.raise_for_status()
+
+    return response.json()

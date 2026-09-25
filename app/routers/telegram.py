@@ -10,7 +10,10 @@ from app.services.contact_service import (
     create_contact,
     get_contact,
 )
-from app.services.telegram_service import send_business_message
+from app.services.telegram_service import (
+    get_business_connection,
+    send_business_message,
+)
 
 load_dotenv()
 
@@ -58,6 +61,19 @@ async def telegram_webhook(
         }
 
     business_message = update.business_message
+
+    connection = await get_business_connection(
+    business_message.business_connection_id
+)
+
+    business_user_id = connection["result"]["user"]["id"]
+
+    # Ignore messages sent by the business account owner
+    if business_message.from_.id == business_user_id:
+        return {
+            "ok": True,
+            "message": "Business owner message ignored",
+        }
 
     telegram_user_id = business_message.from_.id
     chat_id = business_message.chat.id
