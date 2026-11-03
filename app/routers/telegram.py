@@ -12,8 +12,11 @@ from app.services.contact_service import (
 )
 from app.services.telegram_service import (
     get_business_connection,
-    get_chat_member,
     send_business_message,
+)
+
+from app.services.group_telegram_service import (
+    get_group_chat_member,
     send_group_message,
 )
 
@@ -24,6 +27,8 @@ load_dotenv()
 TELEGRAM_WEBHOOK_SECRET = os.getenv(
     "TELEGRAM_WEBHOOK_SECRET"
 )
+
+GROUP_TELEGRAM_WEBHOOK_SECRET = os.getenv("GROUP_TELEGRAM_WEBHOOK_SECRET")
 
 router = APIRouter(
     prefix="/webhook",
@@ -73,13 +78,6 @@ async def telegram_webhook(
         raise HTTPException(
             status_code=403,
             detail="Invalid webhook secret",
-        )
-
-    # Handle Pathway to Canada group messages
-    if update.message:
-        return await handle_group_message(
-            message=update.message,
-            db=db,
         )
 
     # Ignore updates that are not Business messages
@@ -143,6 +141,30 @@ async def telegram_webhook(
     }
 
 
+@router.post("/group-telegram")
+async def group_telegram_webhook(
+    update: TelegramUpdate,
+    db: AsyncSession = Depends(get_db),
+    x_telegram_bot_api_secret_token: str | None = Header(default=None),
+):
+    if x_telegram_bot_api_secret_token != GROUP_TELEGRAM_WEBHOOK_SECRET:
+        raise HTTPException(
+            status_code=403,
+            detail="Invalid group webhook secret",
+        )
+
+    if not update.message:
+        return {
+            "ok": True,
+            "message": "Update ignored",
+        }
+
+    return await handle_group_message(
+        message=update.message,
+        db=db,
+    )
+
+
 async def handle_group_message(
     message: GroupMessage,
     db: AsyncSession,
@@ -156,7 +178,7 @@ async def handle_group_message(
         return {"ok": True, "message": "Bot message ignored"}
 
     # Check whether the sender is a group administrator
-    member = await get_chat_member(
+    member = await get_group_chat_member(
         chat_id=message.chat.id,
         user_id=message.from_.id,
     )
