@@ -5,15 +5,19 @@ from fastapi import APIRouter, Depends, Header, HTTPException
 from sqlalchemy.ext.asyncio import AsyncSession
 
 from app.database import get_db
-from app.schemas.telegram import TelegramUpdate
+from app.schemas.telegram import TelegramUpdate, GroupMessage
 from app.services.contact_service import (
     create_contact,
     get_contact,
 )
 from app.services.telegram_service import (
     get_business_connection,
+    get_chat_member,
     send_business_message,
+    send_group_message,
 )
+
+from app.services.faq_service import find_matching_faqs
 
 load_dotenv()
 
@@ -40,6 +44,23 @@ You’ll be able to choose the session that best fits your situation and follow 
 """
 
 
+GROUP_FAQ_REPLY = """Hello! Your question relates to a previous discussion in this group.
+
+Please take a moment to read the discussion below, as it may help answer your question.
+
+Read the discussion:
+{message_link}
+
+You can also follow the conversation and wait for other group members or the admins to provide additional guidance.
+
+⚠️ SECURITY NOTICE
+
+Please beware of anyone contacting you privately while impersonating the group admin, Gabriel. I do not ask people to refer you to me through unsolicited DMs or collect payments through unofficial accounts.
+
+My only official Telegram username is @codewithgabby. Please verify any communication claiming to be from me.
+"""
+
+
 @router.post("/telegram")
 async def telegram_webhook(
     update: TelegramUpdate,
@@ -54,6 +75,14 @@ async def telegram_webhook(
             detail="Invalid webhook secret",
         )
 
+    # Handle Pathway to Canada group messages
+    if update.message:
+        return await handle_group_message(
+            message=update.message,
+            db=db,
+        )
+
+    # Ignore updates that are not Business messages
     if not update.business_message:
         return {
             "ok": True,
@@ -111,4 +140,61 @@ async def telegram_webhook(
         "ok": True,
         "message": "New contact created and welcome message sent",
         "contact_id": contact.id,
+    }
+
+
+async def handle_group_message(
+    message: GroupMessage,
+    db: AsyncSession,
+):
+    # Ignore messages without text or a sender
+    if not message.text or not message.from_:
+        return {"ok": True, "message": "Message ignored"}
+
+    # Ignore messages from bots
+    if message.from_.is_bot:
+        return {"ok": True, "message": "Bot message ignored"}
+
+    # Check whether the sender is a group administrator
+    member = await get_chat_member(
+        chat_id=message.chat.id,
+        user_id=message.from_.id,
+    )
+
+    status = member["result"]["status"]
+
+    if status in ["creator", "administrator"]:
+        return {
+            "ok": True,
+            "message": "Admin message ignored",
+        }
+
+    # Search for matching FAQ links
+    matches = await find_matching_faqs(
+        db=db,
+        question=message.text,
+    )
+
+    if not matches:
+        return {
+            "ok": True,
+            "message": "No matching FAQ found",
+        }
+
+    best_match = matches[0]
+
+    reply_text = GROUP_FAQ_REPLY.format(
+        message_link=best_match.message_link,
+    )
+
+    await send_group_message(
+        chat_id=message.chat.id,
+        text=reply_text,
+        reply_to_message_id=message.message_id,
+    )
+
+    return {
+        "ok": True,
+        "message": "FAQ reply sent",
+        "topic": best_match.topic,
     }
