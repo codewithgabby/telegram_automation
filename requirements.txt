@@ -5,3 +5,4 @@ asyncpg
 alembic
 httpx
 python-dotenv
+pwdlib[argon2]
