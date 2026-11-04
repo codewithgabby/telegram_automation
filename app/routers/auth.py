@@ -42,6 +42,7 @@ class AdminLoginRequest(BaseModel):
 class AdminLoginResponse(BaseModel):
     message: str
     username: str
+    csrf_token: str
 
 
 async def get_current_admin(
@@ -153,6 +154,7 @@ async def admin_login(
     return {
         "message": "Login successful",
         "username": admin.username,
+        "csrf_token": csrf_token,
     }
 
 
