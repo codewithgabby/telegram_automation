@@ -26,3 +26,12 @@ htmlcov/
 
 # Logs
 *.log
+
+# Local secrets and configuration
+.env.*
+!.env.example
+
+# Python environment and secrets
+secrets/
+*.pem
+*.key

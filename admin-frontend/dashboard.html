@@ -1,0 +1,221 @@
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <meta name="theme-color" content="#101828">
+
+    <title>Dashboard | Pathway to Canada</title>
+
+    <link rel="stylesheet" href="css/style.css">
+</head>
+
+<body class="auth-pending">
+
+    <div class="dashboard-layout">
+
+        <!-- SIDEBAR -->
+        <aside class="sidebar" id="sidebar">
+
+            <div class="sidebar-brand">
+                <div class="brand-logo">PC</div>
+
+                <div>
+                    <h2>Pathway to Canada</h2>
+                    <p>Admin Portal</p>
+                </div>
+            </div>
+
+            <nav class="sidebar-nav">
+
+                <a href="#overview" class="nav-link active">
+                    <span>▦</span>
+                    Overview
+                </a>
+
+                <a href="#faqs" class="nav-link">
+                    <span>☷</span>
+                    Manage FAQs
+                </a>
+
+            </nav>
+
+            <div class="sidebar-footer">
+                <p>Administrator</p>
+                <button id="logoutButton" class="logout-button">
+                    ↪ Sign out
+                </button>
+            </div>
+
+        </aside>
+
+
+        <!-- MAIN CONTENT -->
+        <main class="main-content">
+
+            <!-- TOP HEADER -->
+            <header class="dashboard-header">
+
+                <button class="menu-toggle" id="menuToggle" aria-label="Toggle navigation">
+                    ☰
+                </button>
+
+                <div>
+                    <h1>Dashboard</h1>
+                    <p>Manage your Telegram group FAQ database.</p>
+                </div>
+
+            </header>
+
+
+            <!-- OVERVIEW -->
+            <section id="overview" class="dashboard-section active">
+
+                <div class="section-heading">
+                    <div>
+                        <h2>Overview</h2>
+                        <p>Here's what's happening with your FAQs.</p>
+                    </div>
+
+                    <button id="addFaqButton" class="primary-button">
+                        + Add New FAQ
+                    </button>
+                </div>
+
+
+                <!-- STATISTICS -->
+                <div class="stats-grid">
+
+                    <article class="stat-card">
+                        <p>Total FAQs</p>
+                        <h3 id="totalFaqs">0</h3>
+                        <span>All saved FAQs</span>
+                    </article>
+
+                    <article class="stat-card">
+                        <p>Active FAQs</p>
+                        <h3 id="activeFaqs">0</h3>
+                        <span>Currently available</span>
+                    </article>
+
+                    <article class="stat-card">
+                        <p>Inactive FAQs</p>
+                        <h3 id="inactiveFaqs">0</h3>
+                        <span>Currently disabled</span>
+                    </article>
+
+                </div>
+
+            </section>
+
+
+            <!-- FAQ MANAGEMENT -->
+            <section id="faqs" class="dashboard-section">
+
+                <div class="section-heading faq-heading">
+                    <div>
+                        <h2>Manage FAQs</h2>
+                        <p>Create, edit and organize your group discussions.</p>
+                    </div>
+                </div>
+
+
+                <div class="faq-toolbar">
+
+                    <input type="search" id="faqSearch" placeholder="Search FAQs by topic or keyword...">
+
+                </div>
+
+
+                <div class="faq-container">
+
+                    <div id="faqList" class="faq-list">
+
+                        <div class="empty-state">
+                            <h3>No FAQs loaded yet</h3>
+                            <p>Your FAQ records will appear here.</p>
+                        </div>
+
+                    </div>
+
+                </div>
+
+            </section>
+
+        </main>
+
+    </div>
+
+
+    <!-- FAQ MODAL -->
+    <div class="modal-overlay" id="faqModal">
+
+        <div class="modal-card">
+
+            <div class="modal-header">
+                <div>
+                    <h2 id="modalTitle">Add New FAQ</h2>
+                    <p>Provide the details for this FAQ entry.</p>
+                </div>
+
+                <button id="closeModalButton" class="close-button">
+                    ×
+                </button>
+            </div>
+
+
+            <form id="faqForm">
+
+                <input type="hidden" id="faqId">
+
+                <div class="form-group">
+                    <label for="faqTopic">Topic</label>
+
+                    <input type="text" id="faqTopic" placeholder="e.g. Study Permit Proof of Funds" required>
+                </div>
+
+
+                <div class="form-group">
+                    <label for="faqKeywords">Keywords</label>
+
+                    <textarea id="faqKeywords" rows="3" placeholder="proof of funds, POF, bank statement"
+                        required></textarea>
+
+                    <small>Separate each keyword with a comma.</small>
+                </div>
+
+
+                <div class="form-group">
+                    <label for="faqLink">Telegram Message Link</label>
+
+                    <input type="url" id="faqLink" placeholder="https://t.me/..." required>
+                </div>
+
+
+                <div class="modal-actions">
+
+                    <button type="button" id="cancelFaqButton" class="secondary-button">
+                        Cancel
+                    </button>
+
+                    <button type="submit" class="primary-button" id="saveFaqButton">
+                        Save FAQ
+                    </button>
+
+                </div>
+
+            </form>
+
+        </div>
+
+    </div>
+
+
+    <script src="js/auth.js"></script>
+    <script src="js/faqs.js"></script>
+    <script src="js/app.js"></script>
+
+</body>
+
+</html>
