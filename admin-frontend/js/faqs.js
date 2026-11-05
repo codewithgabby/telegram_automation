@@ -1,5 +1,9 @@
 
+"use strict";
+
 const FAQ_API_URL = "https://telegram-automation-nlq9.onrender.com/admin/faqs";
+
+const ACCESS_TOKEN_KEY = "admin_access_token";
 
 document.addEventListener("DOMContentLoaded", () => {
 
@@ -13,48 +17,38 @@ document.addEventListener("DOMContentLoaded", () => {
     let faqs = [];
 
     // =================================
-    // CSRF TOKEN
-    // =================================
-
-    function getCsrfToken() {
-    return sessionStorage.getItem("admin_csrf_token");
-}
-
-
-    // =================================
     // API REQUEST HELPER
     // =================================
 
     async function apiRequest(endpoint, options = {}) {
 
+        const accessToken = sessionStorage.getItem(ACCESS_TOKEN_KEY);
+
+        if (!accessToken) {
+            window.location.replace("index.html");
+            throw new Error("Authentication required. Please sign in again.");
+        }
+
         const headers = {
-            ...options.headers
+            ...options.headers,
+            "Authorization": `Bearer ${accessToken}`
         };
 
         if (options.body) {
             headers["Content-Type"] = "application/json";
         }
 
-        if (["POST", "PATCH", "DELETE"].includes(options.method)) {
-            const csrfToken = getCsrfToken();
-
-            if (!csrfToken) {
-                throw new Error(
-                    "Security token missing. Please sign in again."
-                );
-            }
-
-            headers["X-CSRF-Token"] = csrfToken;
-        }
-
         const response = await fetch(`${FAQ_API_URL}${endpoint}`, {
             ...options,
-            headers,
-            credentials: "include"
+            headers
         });
 
         if (response.status === 401) {
-            window.location.href = "index.html";
+
+            sessionStorage.removeItem(ACCESS_TOKEN_KEY);
+
+            window.location.replace("index.html");
+
             throw new Error("Your session has expired. Please sign in again.");
         }
 
@@ -414,11 +408,11 @@ document.addEventListener("DOMContentLoaded", () => {
 
 
     // =================================
-// INITIAL LOAD AFTER AUTHENTICATION
-// =================================
+    // INITIAL LOAD AFTER AUTHENTICATION
+    // =================================
 
-document.addEventListener("adminAuthenticated", () => {
-    loadFaqs();
-});
+    document.addEventListener("adminAuthenticated", () => {
+        loadFaqs();
+    });
 
 });

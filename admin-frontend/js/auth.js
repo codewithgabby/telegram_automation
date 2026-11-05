@@ -7,21 +7,21 @@
 
 const API_BASE_URL = "https://telegram-automation-nlq9.onrender.com";
 
-const CSRF_STORAGE_KEY = "admin_csrf_token";
+const ACCESS_TOKEN_KEY = "admin_access_token";
 
 const loginForm = document.getElementById("loginForm");
 
 
 // =============================================
-// CSRF TOKEN MANAGEMENT
+// ACCESS TOKEN MANAGEMENT
 // =============================================
 
-function getCsrfToken() {
-    return sessionStorage.getItem(CSRF_STORAGE_KEY);
+function getAccessToken() {
+    return sessionStorage.getItem(ACCESS_TOKEN_KEY);
 }
 
-function clearCsrfToken() {
-    sessionStorage.removeItem(CSRF_STORAGE_KEY);
+function clearAccessToken() {
+    sessionStorage.removeItem(ACCESS_TOKEN_KEY);
 }
 
 
@@ -69,8 +69,6 @@ if (loginForm) {
                         "Content-Type": "application/json"
                     },
 
-                    credentials: "include",
-
                     body: JSON.stringify({
                         username,
                         password
@@ -87,19 +85,19 @@ if (loginForm) {
                 );
             }
 
-            // Validate the CSRF token returned by the backend.
+            // Validate the access token returned by the backend.
 
-            if (!data.csrf_token) {
+            if (!data.access_token) {
                 throw new Error(
-                    "Login response did not include a security token."
+                    "Login response did not include an access token."
                 );
             }
 
-            // Store the CSRF token for authenticated requests.
+            // Store the access token for authenticated requests.
 
             sessionStorage.setItem(
-                CSRF_STORAGE_KEY,
-                data.csrf_token
+                ACCESS_TOKEN_KEY,
+                data.access_token
             );
 
             // Proceed to the dashboard.
@@ -134,19 +132,29 @@ if (!loginForm) {
 
     async function verifyAdminSession() {
 
+        const accessToken = getAccessToken();
+
+        if (!accessToken) {
+            window.location.replace("index.html");
+            return;
+        }
+
         try {
 
             const response = await fetch(
                 `${API_BASE_URL}/admin/auth/me`,
                 {
                     method: "GET",
-                    credentials: "include"
+
+                    headers: {
+                        "Authorization": `Bearer ${accessToken}`
+                    }
                 }
             );
 
             if (!response.ok) {
 
-                clearCsrfToken();
+                clearAccessToken();
 
                 window.location.replace("index.html");
 
@@ -154,13 +162,13 @@ if (!loginForm) {
             }
 
             // Authentication succeeded.
-// Reveal the dashboard and notify faqs.js.
+            // Reveal the dashboard and notify faqs.js.
 
-document.body.classList.remove("auth-pending");
+            document.body.classList.remove("auth-pending");
 
-document.dispatchEvent(
-    new Event("adminAuthenticated")
-);
+            document.dispatchEvent(
+                new Event("adminAuthenticated")
+            );
 
         } catch (error) {
 
@@ -168,8 +176,6 @@ document.dispatchEvent(
                 "Session verification failed:",
                 error
             );
-
-            clearCsrfToken();
 
             window.location.replace("index.html");
 
@@ -204,15 +210,11 @@ document.dispatchEvent(
                 return;
             }
 
-            const csrfToken = getCsrfToken();
+            const accessToken = getAccessToken();
 
-            if (!csrfToken) {
+            if (!accessToken) {
 
-                alert(
-                    "Security token missing. Please sign in again."
-                );
-
-                clearCsrfToken();
+                clearAccessToken();
 
                 window.location.replace("index.html");
 
@@ -229,10 +231,8 @@ document.dispatchEvent(
                     {
                         method: "POST",
 
-                        credentials: "include",
-
                         headers: {
-                            "X-CSRF-Token": csrfToken
+                            "Authorization": `Bearer ${accessToken}`
                         }
                     }
                 );
@@ -249,9 +249,9 @@ document.dispatchEvent(
                     );
                 }
 
-                // Clear the stored CSRF token.
+                // Clear the stored access token.
 
-                clearCsrfToken();
+                clearAccessToken();
 
                 // Return to login page.
 

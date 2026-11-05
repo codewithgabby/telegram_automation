@@ -75,7 +75,6 @@ async def create_admin_session(
         session_token_hash=token_hash,
         expires_at=datetime.utcnow() + timedelta(hours=SESSION_DURATION_HOURS),
     )
-
     db.add(session)
     await db.commit()
     await db.refresh(session)

@@ -8,7 +8,7 @@ from sqlalchemy.ext.asyncio import AsyncSession
 
 from app.database import get_db
 from app.schemas.faq import FAQCreate, FAQUpdate, FAQResponse
-from app.routers.auth import get_current_admin, verify_csrf
+from app.routers.auth import get_current_admin
 from app.services.faq_service import (
     create_faq,
     get_faq_by_id,
@@ -29,7 +29,6 @@ router = APIRouter(
     "",
     response_model=FAQResponse,
     status_code=status.HTTP_201_CREATED,
-    dependencies=[Depends(verify_csrf)],
 )
 async def create_faq_endpoint(
     faq_data: FAQCreate,
@@ -73,7 +72,7 @@ async def get_faq_endpoint(
 @router.patch(
     "/{faq_id}",
     response_model=FAQResponse,
-    dependencies=[Depends(verify_csrf)],
+
 )
 async def update_faq_endpoint(
     faq_id: int,
@@ -100,7 +99,7 @@ async def update_faq_endpoint(
 @router.patch(
     "/{faq_id}/deactivate",
     response_model=FAQResponse,
-    dependencies=[Depends(verify_csrf)],
+
 )
 async def deactivate_faq_endpoint(
     faq_id: int,
@@ -120,7 +119,7 @@ async def deactivate_faq_endpoint(
 @router.delete(
     "/{faq_id}",
     status_code=status.HTTP_204_NO_CONTENT,
-    dependencies=[Depends(verify_csrf)],
+
 )
 async def delete_faq_endpoint(
     faq_id: int,
