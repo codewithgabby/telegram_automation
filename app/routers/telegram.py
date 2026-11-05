@@ -49,22 +49,18 @@ You’ll be able to choose the session that best fits your situation and follow 
 """
 
 
-GROUP_FAQ_REPLY = """Hello! Your question relates to a previous discussion in this group.
+GROUP_FAQ_REPLY = """Hello! Your question relates to previous discussions in this group.
 
-Please take a moment to read the discussion below, as it may help answer your question.
+Please take a moment to read the discussions below, as they may help answer your question.
 
-Read the discussion:
-{message_link}
+{message_links}
 
-You can also follow the conversation and wait for other group members or the admins to provide additional guidance.
+You can also follow the conversations and wait for other group members or the admins to provide additional guidance.
 
 ⚠️ SECURITY NOTICE
 
-Please beware of anyone contacting you privately while impersonating the group admin, Gabriel. I do not ask people to refer you to me through unsolicited DMs or collect payments through unofficial accounts.
-
-My only official Telegram username is @codewithgabby. Please verify any communication claiming to be from me.
+Please beware of anyone contacting you privately while impersonating the group admin, Gabriel. I do not ask people to refer you to me through unsolicited DMs or collect payments through unofficial accounts. My only official Telegram username is @codewithgabby. Please verify any communication claiming to be from me.
 """
-
 
 @router.post("/telegram")
 async def telegram_webhook(
@@ -203,10 +199,24 @@ async def handle_group_message(
             "message": "No matching FAQ found",
         }
 
-    best_match = matches[0]
+    top_matches = []
+    seen_links = set()
+
+    for faq in matches:
+        if faq.message_link not in seen_links:
+            seen_links.add(faq.message_link)
+            top_matches.append(faq)
+
+        if len(top_matches) == 3:
+            break
+
+    links_text = "\n\n".join(
+        f"{index}. {faq.topic}\n{faq.message_link}"
+        for index, faq in enumerate(top_matches, start=1)
+    )
 
     reply_text = GROUP_FAQ_REPLY.format(
-        message_link=best_match.message_link,
+        message_links=links_text,
     )
 
     await send_group_message(
@@ -218,5 +228,7 @@ async def handle_group_message(
     return {
         "ok": True,
         "message": "FAQ reply sent",
-        "topic": best_match.topic,
+        "topics": [faq.topic for faq in top_matches],
     }
+
+    
