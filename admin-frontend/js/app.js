@@ -1,9 +1,7 @@
 
 document.addEventListener("DOMContentLoaded", () => {
 
-    // ================================
     // MOBILE SIDEBAR
-    // ================================
 
     const sidebar = document.getElementById("sidebar");
     const menuToggle = document.getElementById("menuToggle");
@@ -14,10 +12,7 @@ document.addEventListener("DOMContentLoaded", () => {
         });
     }
 
-
-    // ================================
     // FAQ MODAL
-    // ================================
 
     const faqModal = document.getElementById("faqModal");
     const addFaqButton = document.getElementById("addFaqButton");
@@ -26,52 +21,29 @@ document.addEventListener("DOMContentLoaded", () => {
     const faqForm = document.getElementById("faqForm");
     const modalTitle = document.getElementById("modalTitle");
 
-
     function openFaqModal() {
-        if (!faqModal) return;
+        if (!faqModal || !faqForm) return;
 
         faqForm.reset();
-
         document.getElementById("faqId").value = "";
-
         modalTitle.textContent = "Add New FAQ";
 
         faqModal.classList.add("show");
     }
 
-
     function closeFaqModal() {
-        if (!faqModal) return;
-
-        faqModal.classList.remove("show");
+        faqModal?.classList.remove("show");
     }
 
+    addFaqButton?.addEventListener("click", openFaqModal);
+    closeModalButton?.addEventListener("click", closeFaqModal);
+    cancelFaqButton?.addEventListener("click", closeFaqModal);
 
-    if (addFaqButton) {
-        addFaqButton.addEventListener("click", openFaqModal);
-    }
-
-    if (closeModalButton) {
-        closeModalButton.addEventListener("click", closeFaqModal);
-    }
-
-    if (cancelFaqButton) {
-        cancelFaqButton.addEventListener("click", closeFaqModal);
-    }
-
-
-    // Close modal when clicking outside the modal card.
-
-    if (faqModal) {
-        faqModal.addEventListener("click", (event) => {
-            if (event.target === faqModal) {
-                closeFaqModal();
-            }
-        });
-    }
-
-
-    // Close modal with Escape key.
+    faqModal?.addEventListener("click", (event) => {
+        if (event.target === faqModal) {
+            closeFaqModal();
+        }
+    });
 
     document.addEventListener("keydown", (event) => {
         if (event.key === "Escape") {
@@ -80,73 +52,65 @@ document.addEventListener("DOMContentLoaded", () => {
         }
     });
 
+    // SIDEBAR NAVIGATION
 
-    // ================================
-// SIDEBAR NAVIGATION
-// ================================
+    const navLinks = document.querySelectorAll(".nav-link");
+    const dashboardSections = document.querySelectorAll(".dashboard-section");
 
-const navLinks = document.querySelectorAll(".nav-link");
-const dashboardSections = document.querySelectorAll(".dashboard-section");
+    function showDashboardSection(targetId) {
 
-function showDashboardSection(targetId) {
+        const targetSection = document.getElementById(targetId);
 
-    const targetSection = document.getElementById(targetId);
+        if (!targetSection || !targetSection.classList.contains("dashboard-section")) {
+            targetId = "overview";
+        }
 
-    // Only allow valid dashboard sections.
-    if (!targetSection || !targetSection.classList.contains("dashboard-section")) {
-        targetId = "overview";
+        dashboardSections.forEach((section) => {
+            section.classList.remove("active");
+        });
+
+        document.getElementById(targetId).classList.add("active");
+
+        navLinks.forEach((link) => {
+            link.classList.toggle(
+                "active",
+                link.getAttribute("href") === `#${targetId}`
+            );
+        });
+
+        // Load contacts when the Client Engagement page is opened.
+        if (targetId === "contacts" && typeof loadContacts === "function") {
+            loadContacts();
+        }
     }
 
-    // Hide all sections.
-    dashboardSections.forEach((section) => {
-        section.classList.remove("active");
-    });
-
-    // Display selected section.
-    document.getElementById(targetId).classList.add("active");
-
-    // Update sidebar navigation.
     navLinks.forEach((link) => {
-        link.classList.toggle(
-            "active",
-            link.getAttribute("href") === `#${targetId}`
-        );
-    });
-}
 
-// Handle sidebar clicks.
-navLinks.forEach((link) => {
+        link.addEventListener("click", (event) => {
 
-    link.addEventListener("click", (event) => {
+            event.preventDefault();
 
-        event.preventDefault();
+            const targetId = link.getAttribute("href").substring(1);
 
-        const targetId = link.getAttribute("href").substring(1);
+            showDashboardSection(targetId);
 
-        showDashboardSection(targetId);
+            window.location.hash = targetId;
 
-        // Update browser URL.
-        window.location.hash = targetId;
-
-        // Close mobile sidebar.
-        sidebar?.classList.remove("open");
+            sidebar?.classList.remove("open");
+        });
 
     });
 
-});
+    const initialSection = window.location.hash.substring(1);
 
-// Restore selected section when the page loads.
-const initialSection = window.location.hash.substring(1);
+    showDashboardSection(initialSection || "overview");
 
-showDashboardSection(initialSection || "overview");
+    window.addEventListener("hashchange", () => {
 
-// Handle browser back and forward navigation.
-window.addEventListener("hashchange", () => {
+        const targetId = window.location.hash.substring(1);
 
-    const targetId = window.location.hash.substring(1);
+        showDashboardSection(targetId || "overview");
 
-    showDashboardSection(targetId || "overview");
-
-});
+    });
 
 });

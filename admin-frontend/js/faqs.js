@@ -3,7 +3,7 @@
 
 const FAQ_API_URL = "https://telegram-automation-nlq9.onrender.com/admin/faqs";
 
-const ACCESS_TOKEN_KEY = "admin_access_token";
+const FAQ_ACCESS_TOKEN_KEY = "admin_access_token";
 
 document.addEventListener("DOMContentLoaded", () => {
 
@@ -22,7 +22,7 @@ document.addEventListener("DOMContentLoaded", () => {
 
     async function apiRequest(endpoint, options = {}) {
 
-        const accessToken = sessionStorage.getItem(ACCESS_TOKEN_KEY);
+        const accessToken = sessionStorage.getItem(FAQ_ACCESS_TOKEN_KEY);
 
         if (!accessToken) {
             window.location.replace("index.html");
@@ -45,7 +45,7 @@ document.addEventListener("DOMContentLoaded", () => {
 
         if (response.status === 401) {
 
-            sessionStorage.removeItem(ACCESS_TOKEN_KEY);
+            sessionStorage.removeItem(FAQ_ACCESS_TOKEN_KEY);
 
             window.location.replace("index.html");
 

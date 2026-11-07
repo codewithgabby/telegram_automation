@@ -15,12 +15,10 @@
 
     <div class="dashboard-layout">
 
-        <!-- SIDEBAR -->
         <aside class="sidebar" id="sidebar">
 
             <div class="sidebar-brand">
                 <div class="brand-logo">PC</div>
-
                 <div>
                     <h2>Pathway to Canada</h2>
                     <p>Admin Portal</p>
@@ -30,13 +28,15 @@
             <nav class="sidebar-nav">
 
                 <a href="#overview" class="nav-link active">
-                    <span>▦</span>
-                    Overview
+                    <span>▦</span> Overview
                 </a>
 
                 <a href="#faqs" class="nav-link">
-                    <span>☷</span>
-                    Manage FAQs
+                    <span>☷</span> Manage FAQs
+                </a>
+
+                <a href="#contacts" class="nav-link">
+                    <span>👥</span> Client Engagement
                 </a>
 
             </nav>
@@ -50,11 +50,8 @@
 
         </aside>
 
-
-        <!-- MAIN CONTENT -->
         <main class="main-content">
 
-            <!-- TOP HEADER -->
             <header class="dashboard-header">
 
                 <button class="menu-toggle" id="menuToggle" aria-label="Toggle navigation">
@@ -63,13 +60,13 @@
 
                 <div>
                     <h1>Dashboard</h1>
-                    <p>Manage your Telegram group FAQ database.</p>
+                    <p>Manage your Telegram group FAQs and client engagement.</p>
                 </div>
 
             </header>
 
-
             <!-- OVERVIEW -->
+
             <section id="overview" class="dashboard-section active">
 
                 <div class="section-heading">
@@ -83,8 +80,6 @@
                     </button>
                 </div>
 
-
-                <!-- STATISTICS -->
                 <div class="stats-grid">
 
                     <article class="stat-card">
@@ -109,8 +104,8 @@
 
             </section>
 
-
             <!-- FAQ MANAGEMENT -->
+
             <section id="faqs" class="dashboard-section">
 
                 <div class="section-heading faq-heading">
@@ -120,16 +115,11 @@
                     </div>
                 </div>
 
-
                 <div class="faq-toolbar">
-
                     <input type="search" id="faqSearch" placeholder="Search FAQs by topic or keyword...">
-
                 </div>
 
-
                 <div class="faq-container">
-
                     <div id="faqList" class="faq-list">
 
                         <div class="empty-state">
@@ -137,6 +127,73 @@
                             <p>Your FAQ records will appear here.</p>
                         </div>
 
+                    </div>
+                </div>
+
+            </section>
+
+            <!-- CLIENT ENGAGEMENT -->
+
+            <section id="contacts" class="dashboard-section">
+
+                <div class="section-heading">
+                    <div>
+                        <h2>Client Engagement</h2>
+                        <p>Manage your Telegram Business enquiries and follow-ups.</p>
+                    </div>
+
+                    <button id="refreshContactsButton" class="primary-button">
+                        ↻ Refresh
+                    </button>
+                </div>
+
+                <div class="contact-stats-grid">
+
+                    <article class="stat-card">
+                        <p>Total Contacts</p>
+                        <h3 id="totalContacts">0</h3>
+                        <span>All registered enquiries</span>
+                    </article>
+
+                    <article class="stat-card">
+                        <p>Paid Clients</p>
+                        <h3 id="paidContacts">0</h3>
+                        <span>Payment confirmed</span>
+                    </article>
+
+                    <article class="stat-card">
+                        <p>Sessions Booked</p>
+                        <h3 id="bookedContacts">0</h3>
+                        <span>Booked or completed</span>
+                    </article>
+
+                    <article class="stat-card">
+                        <p>Pending Follow-ups</p>
+                        <h3 id="pendingFollowUps">0</h3>
+                        <span>Awaiting scheduled delivery</span>
+                    </article>
+
+                </div>
+
+                <div class="contact-toolbar">
+
+                    <input type="search" id="contactSearch" placeholder="Search by name, username or Telegram ID...">
+
+                    <select id="contactFilter">
+                        <option value="all">All contacts</option>
+                        <option value="pending">Pending payment</option>
+                        <option value="paid">Paid clients</option>
+                        <option value="booked">Sessions booked</option>
+                        <option value="followup">Pending follow-ups</option>
+                    </select>
+
+                </div>
+
+                <div id="contactsList" class="contacts-list">
+
+                    <div class="empty-state">
+                        <h3>Loading contacts...</h3>
+                        <p>Your Telegram enquiries will appear here.</p>
                     </div>
 
                 </div>
@@ -147,8 +204,8 @@
 
     </div>
 
-
     <!-- FAQ MODAL -->
+
     <div class="modal-overlay" id="faqModal">
 
         <div class="modal-card">
@@ -159,11 +216,8 @@
                     <p>Provide the details for this FAQ entry.</p>
                 </div>
 
-                <button id="closeModalButton" class="close-button">
-                    ×
-                </button>
+                <button id="closeModalButton" class="close-button">×</button>
             </div>
-
 
             <form id="faqForm">
 
@@ -171,27 +225,20 @@
 
                 <div class="form-group">
                     <label for="faqTopic">Topic</label>
-
                     <input type="text" id="faqTopic" placeholder="e.g. Study Permit Proof of Funds" required>
                 </div>
 
-
                 <div class="form-group">
                     <label for="faqKeywords">Keywords</label>
-
                     <textarea id="faqKeywords" rows="3" placeholder="proof of funds, POF, bank statement"
                         required></textarea>
-
                     <small>Separate each keyword with a comma.</small>
                 </div>
 
-
                 <div class="form-group">
                     <label for="faqLink">Telegram Message Link</label>
-
                     <input type="url" id="faqLink" placeholder="https://t.me/..." required>
                 </div>
-
 
                 <div class="modal-actions">
 
@@ -211,9 +258,9 @@
 
     </div>
 
-
     <script src="js/auth.js"></script>
     <script src="js/faqs.js"></script>
+    <script src="js/contacts.js"></script>
     <script src="js/app.js"></script>
 
 </body>

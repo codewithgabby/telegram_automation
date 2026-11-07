@@ -30,9 +30,18 @@ class GroupMessage(BaseModel):
     )
     chat: TelegramChat
     text: str | None = None
+    business_connection_id: str | None = None
+
+
+class TelegramCallbackQuery(BaseModel):
+    id: str
+    from_: TelegramUser = Field(alias="from")
+    data: str | None = None
+    message: GroupMessage | None = None
 
 
 class TelegramUpdate(BaseModel):
     update_id: int
     business_message: TelegramBusinessMessage | None = None
     message: GroupMessage | None = None
+    callback_query: TelegramCallbackQuery | None = None
