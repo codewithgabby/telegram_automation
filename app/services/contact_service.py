@@ -186,6 +186,7 @@ async def record_incoming_message(
 
     if follow_up:
         follow_up.status = "cancelled"
+        follow_up.response = "replied"
         follow_up.last_error = "Cancelled because the contact replied."
 
     await db.commit()

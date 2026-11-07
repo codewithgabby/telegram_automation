@@ -371,6 +371,7 @@ function renderContacts() {
 
         controls.append(paymentGroup, sessionGroup, followGroup);
 
+
         // FOLLOW-UP HISTORY
 
         const history = createContactElement("div", "followup-history");
@@ -383,6 +384,9 @@ function renderContacts() {
 
         if (followUp) {
 
+            const isCancelled = followUp.status === "cancelled";
+            const wasReplied = followUp.response === "replied";
+
             history.append(
                 createContactElement(
                     "p",
@@ -392,7 +396,7 @@ function renderContacts() {
                 createContactElement(
                     "p",
                     "",
-                    `Scheduled: ${formatContactDate(followUp.scheduled_at)}`
+                    `${isCancelled ? "Originally scheduled" : "Scheduled"}: ${formatContactDate(followUp.scheduled_at)}`
                 ),
                 createContactElement(
                     "p",
@@ -402,7 +406,15 @@ function renderContacts() {
                 createContactElement(
                     "p",
                     "",
-                    `Client response: ${followUp.response || "No response"}`
+                    `Client response: ${
+                        wasReplied
+                            ? "Replied"
+                            : followUp.response === "interested"
+                                ? "Interested"
+                                : followUp.response === "not_now"
+                                    ? "Not right now"
+                                    : "No response"
+                    }`
                 )
             );
 
