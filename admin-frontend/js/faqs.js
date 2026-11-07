@@ -16,6 +16,9 @@ document.addEventListener("DOMContentLoaded", () => {
 
     let faqs = [];
 
+    let currentFaqPage = 1;
+    let faqsPerPage = 10;
+
     // =================================
     // API REQUEST HELPER
     // =================================
@@ -105,6 +108,87 @@ document.addEventListener("DOMContentLoaded", () => {
         document.getElementById("inactiveFaqs").textContent = inactive;
     }
 
+    // =================================
+// FAQ PAGINATION CONTROLS
+// =================================
+
+function renderFaqPagination(totalItems, totalPages) {
+
+    let pagination = document.getElementById("faqPagination");
+
+    if (!pagination) {
+        pagination = document.createElement("div");
+        pagination.id = "faqPagination";
+        pagination.className = "pagination-controls";
+
+        faqList.insertAdjacentElement("afterend", pagination);
+    }
+
+    pagination.replaceChildren();
+
+    if (totalItems === 0) {
+        pagination.hidden = true;
+        return;
+    }
+
+    pagination.hidden = false;
+
+    const start = (currentFaqPage - 1) * faqsPerPage + 1;
+    const end = Math.min(currentFaqPage * faqsPerPage, totalItems);
+
+    const summary = document.createElement("span");
+    summary.className = "pagination-summary";
+    summary.textContent = `Showing ${start}–${end} of ${totalItems} FAQs`;
+
+    const pageSize = document.createElement("select");
+    pageSize.className = "contact-select";
+
+    [10, 20, 50].forEach(size => {
+
+        const option = document.createElement("option");
+
+        option.value = size;
+        option.textContent = `${size} per page`;
+        option.selected = faqsPerPage === size;
+
+        pageSize.appendChild(option);
+    });
+
+    pageSize.addEventListener("change", () => {
+        faqsPerPage = Number(pageSize.value);
+        currentFaqPage = 1;
+        applyFaqSearch();
+    });
+
+    const previous = document.createElement("button");
+    previous.type = "button";
+    previous.className = "faq-action-button";
+    previous.textContent = "Previous";
+    previous.disabled = currentFaqPage === 1;
+
+    previous.addEventListener("click", () => {
+        currentFaqPage--;
+        applyFaqSearch();
+    });
+
+    const pageInfo = document.createElement("span");
+    pageInfo.className = "pagination-summary";
+    pageInfo.textContent = `Page ${currentFaqPage} of ${totalPages}`;
+
+    const next = document.createElement("button");
+    next.type = "button";
+    next.className = "faq-action-button";
+    next.textContent = "Next";
+    next.disabled = currentFaqPage === totalPages;
+
+    next.addEventListener("click", () => {
+        currentFaqPage++;
+        applyFaqSearch();
+    });
+
+    pagination.append(summary, pageSize, previous, pageInfo, next);
+}
+
 
     // =================================
     // RENDER FAQs
@@ -113,6 +197,20 @@ document.addEventListener("DOMContentLoaded", () => {
     function renderFaqs(records) {
 
         faqList.replaceChildren();
+
+        const totalPages = Math.max(
+    1,
+    Math.ceil(records.length / faqsPerPage)
+);
+
+currentFaqPage = Math.min(currentFaqPage, totalPages);
+
+const startIndex = (currentFaqPage - 1) * faqsPerPage;
+
+const pageRecords = records.slice(
+    startIndex,
+    startIndex + faqsPerPage
+);
 
         if (records.length === 0) {
 
@@ -128,10 +226,12 @@ document.addEventListener("DOMContentLoaded", () => {
             emptyState.append(heading, message);
             faqList.appendChild(emptyState);
 
+            renderFaqPagination(0, 1);
+
             return;
         }
 
-        records.forEach(faq => {
+        pageRecords.forEach(faq => {
 
             const card = document.createElement("article");
             card.className = "faq-item";
@@ -179,10 +279,11 @@ document.addEventListener("DOMContentLoaded", () => {
             actions.append(status, editButton, toggleButton, deleteButton);
 
             card.append(content, actions);
-            faqList.appendChild(card);
-        });
-    }
+faqList.appendChild(card);
+});
 
+renderFaqPagination(records.length, totalPages);
+}
 
     // =================================
     // CREATE ACTION BUTTONS
@@ -204,23 +305,32 @@ document.addEventListener("DOMContentLoaded", () => {
     // SEARCH FAQs
     // =================================
 
-    faqSearch?.addEventListener("input", () => {
+    // =================================
+// SEARCH FAQs
+// =================================
 
-        const searchTerm = faqSearch.value.toLowerCase().trim();
+function applyFaqSearch() {
 
-        const filteredFaqs = faqs.filter(faq => {
+    const searchTerm = faqSearch.value.toLowerCase().trim();
 
-            const topicMatches = faq.topic.toLowerCase().includes(searchTerm);
+    const filteredFaqs = faqs.filter(faq => {
 
-            const keywordMatches = faq.keywords.some(keyword =>
-                keyword.toLowerCase().includes(searchTerm)
-            );
+        const topicMatches = faq.topic.toLowerCase().includes(searchTerm);
 
-            return topicMatches || keywordMatches;
-        });
+        const keywordMatches = faq.keywords.some(keyword =>
+            keyword.toLowerCase().includes(searchTerm)
+        );
 
-        renderFaqs(filteredFaqs);
+        return topicMatches || keywordMatches;
     });
+
+    renderFaqs(filteredFaqs);
+}
+
+faqSearch?.addEventListener("input", () => {
+    currentFaqPage = 1;
+    applyFaqSearch();
+});
 
 
     // =================================

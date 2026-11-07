@@ -991,3 +991,41 @@ body.auth-pending {
         flex-direction: column;
     }
 }
+
+/* CONTACTS PAGINATION */
+
+.pagination-controls {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    flex-wrap: wrap;
+    gap: 12px;
+    margin-top: 24px;
+    padding: 16px;
+    border-top: 1px solid #e5e7eb;
+}
+
+.pagination-summary {
+    font-size: 13px;
+    color: #64748b;
+}
+
+.pagination-controls button:disabled {
+    opacity: 0.45;
+    cursor: not-allowed;
+}
+
+.pagination-controls select {
+    min-width: 130px;
+}
+
+@media (max-width: 600px) {
+    .pagination-controls {
+        justify-content: center;
+    }
+
+    .pagination-summary {
+        width: 100%;
+        text-align: center;
+    }
+}

@@ -9,6 +9,9 @@ const CONTACTS_ACCESS_TOKEN_KEY = "admin_access_token";
 let contacts = [];
 let contactsLoaded = false;
 
+let currentContactsPage = 1;
+let contactsPerPage = 10;
+
 async function contactsApiRequest(endpoint = "", options = {}) {
 
     const token = sessionStorage.getItem(CONTACTS_ACCESS_TOKEN_KEY);
@@ -137,6 +140,103 @@ function createContactElement(tag, className, text) {
     return element;
 }
 
+// CONTACTS PAGINATION CONTROLS
+
+function renderContactsPagination(totalItems, totalPages) {
+
+    const container = document.getElementById("contactsList");
+
+    if (!container) return;
+
+    let pagination = document.getElementById("contactsPagination");
+
+    if (!pagination) {
+        pagination = createContactElement("div", "pagination-controls");
+        pagination.id = "contactsPagination";
+        container.insertAdjacentElement("afterend", pagination);
+    }
+
+    pagination.replaceChildren();
+
+    if (totalItems === 0) {
+        pagination.hidden = true;
+        return;
+    }
+
+    pagination.hidden = false;
+
+    const start = (currentContactsPage - 1) * contactsPerPage + 1;
+    const end = Math.min(currentContactsPage * contactsPerPage, totalItems);
+
+    const summary = createContactElement(
+        "span",
+        "pagination-summary",
+        `Showing ${start}–${end} of ${totalItems} contacts`
+    );
+
+    const pageSize = createContactElement("select", "contact-select");
+
+    [10, 20, 50].forEach(size => {
+
+        const option = createContactElement("option", "", `${size} per page`);
+        option.value = size;
+
+        if (contactsPerPage === size) {
+            option.selected = true;
+        }
+
+        pageSize.appendChild(option);
+    });
+
+    pageSize.addEventListener("change", () => {
+        contactsPerPage = Number(pageSize.value);
+        currentContactsPage = 1;
+        renderContacts();
+    });
+
+    const previous = createContactElement(
+        "button",
+        "faq-action-button",
+        "Previous"
+    );
+
+    previous.type = "button";
+    previous.disabled = currentContactsPage === 1;
+
+    previous.addEventListener("click", () => {
+        currentContactsPage--;
+        renderContacts();
+    });
+
+    const next = createContactElement(
+        "button",
+        "faq-action-button",
+        "Next"
+    );
+
+    next.type = "button";
+    next.disabled = currentContactsPage === totalPages;
+
+    next.addEventListener("click", () => {
+        currentContactsPage++;
+        renderContacts();
+    });
+
+    const pageInfo = createContactElement(
+        "span",
+        "pagination-summary",
+        `Page ${currentContactsPage} of ${totalPages}`
+    );
+
+    pagination.append(
+        summary,
+        pageSize,
+        previous,
+        pageInfo,
+        next
+    );
+}
+
 
 // RENDER CONTACTS
 
@@ -191,25 +291,41 @@ function renderContacts() {
 
     container.replaceChildren();
 
-    if (filtered.length === 0) {
+const totalPages = Math.max(
+    1,
+    Math.ceil(filtered.length / contactsPerPage)
+);
 
-        const empty = createContactElement("div", "empty-state");
+currentContactsPage = Math.min(currentContactsPage, totalPages);
 
-        empty.append(
-            createContactElement("h3", "", "No contacts found"),
-            createContactElement(
-                "p",
-                "",
-                "Try another search or check back when new enquiries arrive."
-            )
-        );
+const startIndex = (currentContactsPage - 1) * contactsPerPage;
 
-        container.appendChild(empty);
+const pageContacts = filtered.slice(
+    startIndex,
+    startIndex + contactsPerPage
+);
 
-        return;
-    }
+if (filtered.length === 0) {
 
-    filtered.forEach(contact => {
+    const empty = createContactElement("div", "empty-state");
+
+    empty.append(
+        createContactElement("h3", "", "No contacts found"),
+        createContactElement(
+            "p",
+            "",
+            "Try another search or check back when new enquiries arrive."
+        )
+    );
+
+    container.appendChild(empty);
+
+renderContactsPagination(0, 1);
+
+return;
+}
+
+pageContacts.forEach(contact => {
 
         const card = createContactElement("article", "contact-card");
 
@@ -443,7 +559,10 @@ function renderContacts() {
 
         container.appendChild(card);
     });
+
+    renderContactsPagination(filtered.length, totalPages);
 }
+
 
 
 // UPDATE CONTACT STATUS
@@ -478,10 +597,16 @@ document.addEventListener("DOMContentLoaded", () => {
         ?.addEventListener("click", loadContacts);
 
     document.getElementById("contactSearch")
-        ?.addEventListener("input", renderContacts);
+        ?.addEventListener("input", () => {
+            currentContactsPage = 1;
+            renderContacts();
+        });
 
     document.getElementById("contactFilter")
-        ?.addEventListener("change", renderContacts);
+        ?.addEventListener("change", () => {
+            currentContactsPage = 1;
+            renderContacts();
+        });
 
     document.addEventListener("adminAuthenticated", () => {
         if (
