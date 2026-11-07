@@ -2,7 +2,10 @@
 "use strict";
 
 const CONTACTS_API_URL =
-    "https://telegram-automation-nlq9.onrender.com/admin/contacts";
+    "https://telegram-automation-nlq9.onrender.com/admin/contacts";  
+
+const ANALYTICS_API_URL =
+    CONTACTS_API_URL.replace("/admin/contacts", "/admin/analytics");    
 
 const CONTACTS_ACCESS_TOKEN_KEY = "admin_access_token";
 
@@ -138,6 +141,106 @@ function createContactElement(tag, className, text) {
     }
 
     return element;
+}
+
+// =============================================
+// CLIENT ENGAGEMENT TIMELINE
+// =============================================
+
+async function loadContactTimeline(contactId, container) {
+
+    container.replaceChildren(
+        createContactElement("p", "", "Loading engagement history...")
+    );
+
+    try {
+
+        const token = sessionStorage.getItem(
+            CONTACTS_ACCESS_TOKEN_KEY
+        );
+
+        const response = await fetch(
+            `${ANALYTICS_API_URL}/clients/${contactId}/timeline`,
+            {
+                method: "GET",
+                headers: {
+                    Authorization: `Bearer ${token}`
+                }
+            }
+        );
+
+        const data = await response.json().catch(() => ({}));
+
+        if (!response.ok) {
+            throw new Error(
+                data.detail || "Unable to load client timeline."
+            );
+        }
+
+        container.replaceChildren();
+
+        const heading = createContactElement(
+            "h4",
+            "",
+            "Engagement History"
+        );
+
+        container.appendChild(heading);
+
+        if (!data.events || data.events.length === 0) {
+
+            container.appendChild(
+                createContactElement(
+                    "p",
+                    "",
+                    "No engagement events recorded for this client yet."
+                )
+            );
+
+            return;
+        }
+
+        data.events.forEach(event => {
+
+            const item = createContactElement(
+                "div",
+                "timeline-event"
+            );
+
+            item.append(
+                createContactElement(
+                    "strong",
+                    "",
+                    (event.event_type || "Client activity")
+                        .replaceAll("_", " ")
+                ),
+                createContactElement(
+                    "p",
+                    "",
+                    event.description || "No additional details."
+                ),
+                createContactElement(
+                    "small",
+                    "",
+                    formatContactDate(event.occurred_at)
+                )
+            );
+
+            container.appendChild(item);
+        });
+
+    } catch (error) {
+
+        console.error("Timeline loading error:", error);
+
+        container.replaceChildren(
+            createContactElement(
+                "p",
+                "contact-error",
+                error.message
+            )
+        );
+    }
 }
 
 // CONTACTS PAGINATION CONTROLS
@@ -555,9 +658,54 @@ pageContacts.forEach(contact => {
             );
         }
 
-        card.append(header, details, controls, history);
+        // CLIENT ENGAGEMENT TIMELINE
 
-        container.appendChild(card);
+const timelineButton = createContactElement(
+    "button",
+    "faq-action-button",
+    "View Engagement Timeline"
+);
+
+timelineButton.type = "button";
+
+const timelineContainer = createContactElement(
+    "div",
+    "client-timeline"
+);
+
+timelineContainer.hidden = true;
+
+timelineButton.addEventListener("click", async () => {
+
+    const isHidden = timelineContainer.hidden;
+
+    timelineContainer.hidden = !isHidden;
+
+    if (isHidden) {
+
+        timelineButton.textContent = "Hide Engagement Timeline";
+
+        await loadContactTimeline(
+            contact.id,
+            timelineContainer
+        );
+
+    } else {
+
+        timelineButton.textContent = "View Engagement Timeline";
+    }
+});
+
+card.append(
+    header,
+    details,
+    controls,
+    history,
+    timelineButton,
+    timelineContainer
+);
+
+container.appendChild(card);
     });
 
     renderContactsPagination(filtered.length, totalPages);

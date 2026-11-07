@@ -39,6 +39,10 @@
                     <span>👥</span> Client Engagement
                 </a>
 
+                <a href="#analytics" class="nav-link">
+                    <span>📊</span> Analytics
+                </a>
+
             </nav>
 
             <div class="sidebar-footer">
@@ -200,6 +204,136 @@
 
             </section>
 
+            <!-- ANALYTICS -->
+            
+            <section id="analytics" class="dashboard-section">
+            
+                <div class="section-heading">
+                    <div>
+                        <h2>Client Engagement Analytics</h2>
+                        <p>Monitor enquiries, client interactions and business conversions.</p>
+                    </div>
+            
+                    <button id="refreshAnalyticsButton" class="primary-button">
+                        ↻ Refresh Analytics
+                    </button>
+                </div>
+            
+                <!-- DATE FILTER -->
+            
+                <div class="analytics-toolbar">
+            
+                    <div>
+                        <label for="analyticsPeriod">Reporting period</label>
+                        <select id="analyticsPeriod">
+                            <option value="7">Last 7 days</option>
+                            <option value="30">Last 30 days</option>
+                            <option value="90">Last 90 days</option>
+                            <option value="custom">Custom date range</option>
+                        </select>
+                    </div>
+            
+                    <div id="customDateRange" hidden>
+                        <label for="analyticsStartDate">From</label>
+                        <input type="date" id="analyticsStartDate">
+            
+                        <label for="analyticsEndDate">To</label>
+                        <input type="date" id="analyticsEndDate">
+            
+                        <button id="applyAnalyticsDates" class="secondary-button">
+                            Apply
+                        </button>
+                    </div>
+            
+                </div>
+            
+                <!-- PERFORMANCE STATISTICS -->
+            
+                <div class="analytics-stats-grid">
+            
+                    <article class="stat-card">
+                        <p>New Enquiries</p>
+                        <h3 id="analyticsEnquiries">0</h3>
+                        <span>Contacts acquired</span>
+                    </article>
+            
+                    <article class="stat-card">
+                        <p>Welcome Messages</p>
+                        <h3 id="analyticsWelcomes">0</h3>
+                        <span>Successfully delivered</span>
+                    </article>
+            
+                    <article class="stat-card">
+                        <p>Client Replies</p>
+                        <h3 id="analyticsReplies">0</h3>
+                        <span>Contacts who responded</span>
+                    </article>
+            
+                    <article class="stat-card">
+                        <p>Interested Leads</p>
+                        <h3 id="analyticsInterested">0</h3>
+                        <span>Expressed interest</span>
+                    </article>
+            
+                    <article class="stat-card">
+                        <p>Paid Clients</p>
+                        <h3 id="analyticsPaid">0</h3>
+                        <span>Payments confirmed</span>
+                    </article>
+            
+                    <article class="stat-card">
+                        <p>Completed Sessions</p>
+                        <h3 id="analyticsCompleted">0</h3>
+                        <span>Consultations completed</span>
+                    </article>
+            
+                </div>
+            
+                <!-- ANALYTICS CHARTS -->
+            
+                <div class="analytics-grid">
+            
+                    <article class="analytics-card">
+                        <h3>Enquiry Trends</h3>
+                        <p>Daily enquiries over the selected period.</p>
+                        <div id="enquiryTrendsChart" class="analytics-chart">
+                            <p>No analytics data available yet.</p>
+                        </div>
+                    </article>
+            
+                    <article class="analytics-card">
+                        <h3>Conversion Overview</h3>
+                        <p>How enquiries progress through your business.</p>
+                        <div id="conversionChart" class="analytics-chart">
+                            <p>No analytics data available yet.</p>
+                        </div>
+                    </article>
+            
+                </div>
+            
+                <!-- RECENT ENGAGEMENT HISTORY -->
+            
+                <div class="analytics-history">
+            
+                    <div class="section-heading">
+                        <div>
+                            <h3>Recent Client Activity</h3>
+                            <p>A chronological record of client engagement.</p>
+                        </div>
+                    </div>
+            
+                    <div id="analyticsActivityList">
+                        <div class="empty-state">
+                            <h3>No activity records yet</h3>
+                            <p>Recorded client events will appear here.</p>
+                        </div>
+                    </div>
+            
+                </div>
+            
+            </section>
+
+
         </main>
 
     </div>
@@ -261,6 +395,7 @@
     <script src="js/auth.js"></script>
     <script src="js/faqs.js"></script>
     <script src="js/contacts.js"></script>
+    <script src="js/analytics.js"></script>
     <script src="js/app.js"></script>
 
 </body>

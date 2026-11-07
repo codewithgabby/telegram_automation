@@ -312,3 +312,69 @@ class TelegramWebhookEvent(Base):
             name="uq_telegram_webhook_update_scope",
         ),
     )
+
+
+class ClientEngagementEvent(Base):
+    __tablename__ = "client_engagement_events"
+
+    id: Mapped[int] = mapped_column(
+        primary_key=True,
+        autoincrement=True,
+    )
+
+    contact_id: Mapped[int] = mapped_column(
+        ForeignKey("telegram_contacts.id", ondelete="CASCADE"),
+        nullable=False,
+        index=True,
+    )
+
+    event_type: Mapped[str] = mapped_column(
+        String(50),
+        nullable=False,
+        index=True,
+    )
+
+    previous_value: Mapped[str | None] = mapped_column(
+        String(100),
+        nullable=True,
+    )
+
+    new_value: Mapped[str | None] = mapped_column(
+        String(100),
+        nullable=True,
+    )
+
+    event_source: Mapped[str] = mapped_column(
+        String(30),
+        nullable=False,
+    )
+
+    description: Mapped[str | None] = mapped_column(
+        String(500),
+        nullable=True,
+    )
+
+    metadata_json: Mapped[dict | None] = mapped_column(
+        JSON,
+        nullable=True,
+    )
+
+    occurred_at: Mapped[datetime] = mapped_column(
+        DateTime(timezone=True),
+        default=lambda: datetime.now(timezone.utc),
+        nullable=False,
+        index=True,
+    )
+
+    __table_args__ = (
+        Index(
+            "ix_client_engagement_contact_occurred",
+            "contact_id",
+            "occurred_at",
+        ),
+        Index(
+            "ix_client_engagement_type_occurred",
+            "event_type",
+            "occurred_at",
+        ),
+    )
