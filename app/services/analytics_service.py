@@ -61,25 +61,18 @@ async def get_analytics_summary(
     start_at: datetime,
     end_at: datetime,
 ):
-
-    # Convert timezone-aware dates to naive UTC for existing contact columns.
+    # Contact timestamps use naive UTC in the existing database.
     contact_start_at = start_at.astimezone(timezone.utc).replace(tzinfo=None)
     contact_end_at = end_at.astimezone(timezone.utc).replace(tzinfo=None)
 
-    # New enquiries
-
+    # Period-based metrics
     enquiry_result = await db.execute(
         select(func.count(TelegramContact.id)).where(
             TelegramContact.first_seen_at >= contact_start_at,
             TelegramContact.first_seen_at < contact_end_at,
         )
     )
-
     enquiries = enquiry_result.scalar_one() or 0
-
-    # Successfully delivered welcome messages.
-    # This uses the existing contact records until event
-    # recording is integrated into the welcome handler.
 
     welcome_result = await db.execute(
         select(func.count(TelegramContact.id)).where(
@@ -88,39 +81,30 @@ async def get_analytics_summary(
             TelegramContact.welcome_sent_at < contact_end_at,
         )
     )
-
     welcomes = welcome_result.scalar_one() or 0
 
-    # Client replies, interest, payments and completed sessions
-    # are counted from recorded events.
-
     replies = await count_distinct_event_contacts(
-        db,
-        ANALYTICS_EVENT_TYPES["replies"],
-        start_at,
-        end_at,
+        db, ANALYTICS_EVENT_TYPES["replies"], start_at, end_at
     )
 
     interested = await count_distinct_event_contacts(
-        db,
-        ANALYTICS_EVENT_TYPES["interested"],
-        start_at,
-        end_at,
+        db, ANALYTICS_EVENT_TYPES["interested"], start_at, end_at
     )
 
-    paid = await count_distinct_event_contacts(
-        db,
-        ANALYTICS_EVENT_TYPES["paid"],
-        start_at,
-        end_at,
+    # Current business status: all contacts, regardless of reporting period.
+    paid_result = await db.execute(
+        select(func.count(TelegramContact.id)).where(
+            TelegramContact.payment_status == "paid"
+        )
     )
+    paid = paid_result.scalar_one() or 0
 
-    completed = await count_distinct_event_contacts(
-        db,
-        ANALYTICS_EVENT_TYPES["completed"],
-        start_at,
-        end_at,
+    completed_result = await db.execute(
+        select(func.count(TelegramContact.id)).where(
+            TelegramContact.session_status == "completed"
+        )
     )
+    completed = completed_result.scalar_one() or 0
 
     return {
         "new_enquiries": enquiries,
@@ -183,30 +167,15 @@ async def get_conversion_overview(
     start_at: datetime,
     end_at: datetime,
 ):
-
-    summary = await get_analytics_summary(
-        db,
-        start_at,
-        end_at,
-    )
-
-    enquiries = summary["new_enquiries"]
+    summary = await get_analytics_summary(db, start_at, end_at)
 
     return {
-        "enquiries": enquiries,
+        "enquiries": summary["new_enquiries"],
         "welcome_delivered": summary["welcome_delivered"],
         "client_replies": summary["client_replies"],
         "interested_leads": summary["interested_leads"],
         "paid_clients": summary["paid_clients"],
         "completed_sessions": summary["completed_sessions"],
-        "conversion_rate": (
-            round(
-                summary["paid_clients"] / enquiries * 100,
-                2,
-            )
-            if enquiries
-            else 0
-        ),
     }
 
 

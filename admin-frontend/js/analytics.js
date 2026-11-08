@@ -203,94 +203,81 @@ document.addEventListener("DOMContentLoaded", () => {
     // CONVERSION OVERVIEW
     // =============================================
 
-    function renderConversions(data) {
 
-        const container = document.getElementById(
-            "conversionChart"
-        );
+function renderConversions(data) {
+    const container = document.getElementById("conversionChart");
 
-        const stages = [
-            {
-                label: "Enquiries",
-                value: data.enquiries
-            },
-            {
-                label: "Welcome Delivered",
-                value: data.welcome_delivered
-            },
-            {
-                label: "Client Replies",
-                value: data.client_replies
-            },
-            {
-                label: "Interested Leads",
-                value: data.interested_leads
-            },
-            {
-                label: "Paid Clients",
-                value: data.paid_clients
-            },
-            {
-                label: "Completed Sessions",
-                value: data.completed_sessions
-            }
-        ];
+    const periodStages = [
+        { label: "New Enquiries", value: data.enquiries },
+        { label: "Welcome Delivered", value: data.welcome_delivered },
+        { label: "Client Replies", value: data.client_replies },
+        { label: "Interested Leads", value: data.interested_leads }
+    ];
 
-        const maximum = Math.max(data.enquiries || 0, 1);
+    const currentStages = [
+        { label: "Currently Paid Clients", value: data.paid_clients },
+        { label: "Currently Completed Sessions", value: data.completed_sessions }
+    ];
 
-        container.innerHTML = `
-            <div style="width:100%;">
+    const maximum = Math.max(
+        ...periodStages.map(stage => stage.value || 0),
+        ...currentStages.map(stage => stage.value || 0),
+        1
+    );
 
-                ${stages.map(stage => {
+    function renderStages(stages) {
+        return stages.map(stage => {
+            const value = stage.value || 0;
+            const percentage = (value / maximum) * 100;
 
-                    const percentage = (
-                        stage.value / maximum
-                    ) * 100;
+            return `
+                <div style="margin-bottom:16px;">
+                    <div style="
+                        display:flex;
+                        justify-content:space-between;
+                        gap:10px;
+                        margin-bottom:6px;
+                        font-size:13px;
+                    ">
+                        <span>${stage.label}</span>
+                        <strong>${value}</strong>
+                    </div>
 
-                    return `
-                        <div style="margin-bottom:16px;">
-
-                            <div style="
-                                display:flex;
-                                justify-content:space-between;
-                                gap:10px;
-                                margin-bottom:6px;
-                                font-size:13px;
-                            ">
-                                <span>${stage.label}</span>
-                                <strong>${stage.value}</strong>
-                            </div>
-
-                            <div style="
-                                height:9px;
-                                background:#e5e7eb;
-                                border-radius:10px;
-                                overflow:hidden;
-                            ">
-                                <div style="
-                                    height:100%;
-                                    width:${percentage}%;
-                                    background:#2563eb;
-                                    border-radius:10px;
-                                "></div>
-                            </div>
-
-                        </div>
-                    `;
-                }).join("")}
-
-                <p style="
-                    margin-top:20px;
-                    font-size:14px;
-                    font-weight:600;
-                ">
-                    Enquiry-to-payment conversion:
-                    ${data.conversion_rate}%
-                </p>
-
-            </div>
-        `;
+                    <div style="
+                        height:9px;
+                        background:#e5e7eb;
+                        border-radius:10px;
+                        overflow:hidden;
+                    ">
+                        <div style="
+                            height:100%;
+                            width:${percentage}%;
+                            background:#2563eb;
+                            border-radius:10px;
+                        "></div>
+                    </div>
+                </div>
+            `;
+        }).join("");
     }
+
+    container.innerHTML = `
+        <div style="width:100%;">
+            <h4>Selected Reporting Period</h4>
+            ${renderStages(periodStages)}
+
+            <hr style="margin:20px 0;">
+
+            <h4>Current Business Status</h4>
+            <p style="font-size:12px;color:#64748b;">
+                Current statuses across all registered contacts.
+            </p>
+
+            ${renderStages(currentStages)}
+        </div>
+    `;
+}
+
 
 
     // =============================================
@@ -309,9 +296,8 @@ document.addEventListener("DOMContentLoaded", () => {
                 <div class="empty-state">
                     <h3>No activity records yet</h3>
                     <p>
-                        Client engagement events will appear
-                        here once event recording is integrated.
-                    </p>
+    New client engagement activities will appear here as they occur.
+</p>
                 </div>
             `;
 
