@@ -21,6 +21,8 @@ document.addEventListener("DOMContentLoaded", () => {
 
     let currentCustomRange = null;
 
+    let currentActivityPage = 1;
+
     // =============================================
     // API REQUEST HELPER
     // =============================================
@@ -284,59 +286,104 @@ function renderConversions(data) {
     // RECENT CLIENT ACTIVITY
     // =============================================
 
-    function renderRecentActivity(records) {
 
-        const container = document.getElementById(
-            "analyticsActivityList"
-        );
+function renderRecentActivity(data) {
+    const container = document.getElementById("analyticsActivityList");
 
-        if (!records.length) {
+    const records = data.activities || [];
+    const total = data.total || 0;
+    const page = data.page || 1;
+    const pageSize = data.page_size || 10;
+    const totalPages = data.total_pages || 0;
 
-            container.innerHTML = `
-                <div class="empty-state">
-                    <h3>No activity records yet</h3>
-                    <p>
-    New client engagement activities will appear here as they occur.
-</p>
-                </div>
-            `;
-
-            return;
-        }
-
-        container.innerHTML = records.map(activity => {
-
-            const name = escapeHTML(activity.client_name);
-
-            const description = escapeHTML(
-                activity.description || activity.event_type
-            );
-
-            const date = new Date(
-                activity.occurred_at
-            ).toLocaleString();
-
-            return `
-                <div style="
-                    padding:15px 0;
-                    border-bottom:1px solid #e5e7eb;
-                ">
-
-                    <strong>${name}</strong>
-
-                    <p style="margin:6px 0;">
-                        ${description}
-                    </p>
-
-                    <small style="color:#64748b;">
-                        ${date}
-                    </small>
-
-                </div>
-            `;
-
-        }).join("");
+    if (!records.length) {
+        container.innerHTML = `
+            <div class="empty-state">
+                <h3>No activity records yet</h3>
+                <p>New client engagement activities will appear here as they occur.</p>
+            </div>
+        `;
+        return;
     }
+
+    const activityHTML = records.map(activity => {
+        const name = escapeHTML(activity.client_name);
+        const description = escapeHTML(
+            activity.description || activity.event_type
+        );
+        const date = new Date(activity.occurred_at).toLocaleString();
+
+        return `
+            <div style="
+                padding:15px 0;
+                border-bottom:1px solid #e5e7eb;
+            ">
+                <strong>${name}</strong>
+                <p style="margin:6px 0;">${description}</p>
+                <small style="color:#64748b;">${date}</small>
+            </div>
+        `;
+    }).join("");
+
+    const start = (page - 1) * pageSize + 1;
+    const end = Math.min(page * pageSize, total);
+
+    container.innerHTML = `
+        ${activityHTML}
+
+        <div class="pagination-controls" style="
+            display:flex;
+            align-items:center;
+            justify-content:center;
+            flex-wrap:wrap;
+            gap:12px;
+            margin-top:20px;
+        ">
+            <span class="pagination-summary">
+                Showing ${start}–${end} of ${total} activities
+            </span>
+
+            <button
+                type="button"
+                id="activityPrevious"
+                class="faq-action-button"
+                ${page <= 1 ? "disabled" : ""}
+            >
+                Previous
+            </button>
+
+            <span class="pagination-summary">
+                Page ${page} of ${totalPages}
+            </span>
+
+            <button
+                type="button"
+                id="activityNext"
+                class="faq-action-button"
+                ${page >= totalPages ? "disabled" : ""}
+            >
+                Next
+            </button>
+        </div>
+    `;
+
+    document.getElementById("activityPrevious")
+        ?.addEventListener("click", () => {
+            if (currentActivityPage > 1) {
+                currentActivityPage--;
+                loadAnalytics();
+            }
+        });
+
+    document.getElementById("activityNext")
+        ?.addEventListener("click", () => {
+            if (currentActivityPage < totalPages) {
+                currentActivityPage++;
+                loadAnalytics();
+            }
+        });
+}
+
 
 
     // =============================================
@@ -362,9 +409,13 @@ function renderConversions(data) {
     // LOAD ANALYTICS
     // =============================================
 
-    async function loadAnalytics() {
+    async function loadAnalytics(resetActivityPage = false) {
 
         try {
+
+            if (resetActivityPage) {
+                currentActivityPage = 1;
+            }
 
             refreshButton.disabled = true;
             refreshButton.textContent = "Loading...";
@@ -384,7 +435,7 @@ function renderConversions(data) {
 
                 fetchAnalytics(`conversions?${dateQuery}`),
 
-                fetchAnalytics("activity?limit=20")
+                fetchAnalytics(`activity?page=${currentActivityPage}`)
 
             ]);
 
@@ -396,9 +447,7 @@ function renderConversions(data) {
 
             renderConversions(conversions);
 
-            renderRecentActivity(
-                activity.activities || []
-            );
+            renderRecentActivity(activity);
 
         } catch (error) {
 
@@ -435,7 +484,7 @@ function renderConversions(data) {
 
             currentCustomRange = null;
 
-            loadAnalytics();
+            loadAnalytics(true);
         }
     });
 
@@ -446,28 +495,23 @@ function renderConversions(data) {
 
     applyDatesButton?.addEventListener("click", () => {
 
-        if (!startDate.value || !endDate.value) {
+    if (!startDate.value || !endDate.value) {
+        alert("Please select both start and end dates.");
+        return;
+    }
 
-            alert("Please select both start and end dates.");
+    if (startDate.value > endDate.value) {
+        alert("The start date cannot be later than the end date.");
+        return;
+    }
 
-            return;
-        }
+    currentCustomRange = {
+        start: startDate.value,
+        end: endDate.value
+    };
 
-        if (startDate.value > endDate.value) {
-
-            alert("The start date cannot be later than the end date.");
-
-            return;
-        }
-
-        currentCustomRange = {
-            start: startDate.value,
-            end: endDate.value
-        };
-
-        loadAnalytics();
-    });
-
+    loadAnalytics(true);
+});
 
     // =============================================
     // REFRESH ANALYTICS
@@ -475,7 +519,7 @@ function renderConversions(data) {
 
     refreshButton?.addEventListener(
         "click",
-        loadAnalytics
+        () => loadAnalytics(true)
     );
 
 
@@ -485,7 +529,7 @@ function renderConversions(data) {
 
     document.addEventListener(
         "adminAuthenticated",
-        loadAnalytics
+        () => loadAnalytics(true)
     );
 
 });

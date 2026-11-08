@@ -149,16 +149,14 @@ async def analytics_conversions(
 
 @router.get("/activity")
 async def analytics_activity(
-    limit: int = Query(default=20, ge=1, le=100),
+    page: int = Query(default=1, ge=1),
     db: AsyncSession = Depends(get_db),
 ):
-
-    return {
-        "activities": await get_recent_activity(
-            db,
-            limit,
-        )
-    }
+    return await get_recent_activity(
+        db,
+        page=page,
+        page_size=10,
+    )
 
 
 # =========================================================

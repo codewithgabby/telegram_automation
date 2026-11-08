@@ -186,8 +186,14 @@ async def get_conversion_overview(
 
 async def get_recent_activity(
     db: AsyncSession,
-    limit: int = 20,
+    page: int = 1,
+    page_size: int = 10,
 ):
+    total_result = await db.execute(select(func.count(ClientEngagementEvent.id)))
+
+    total = total_result.scalar_one() or 0
+
+    total_pages = (total + page_size - 1) // page_size
 
     result = await db.execute(
         select(
@@ -198,13 +204,17 @@ async def get_recent_activity(
             TelegramContact,
             TelegramContact.id == ClientEngagementEvent.contact_id,
         )
-        .order_by(ClientEngagementEvent.occurred_at.desc())
-        .limit(limit)
+        .order_by(
+            ClientEngagementEvent.occurred_at.desc(),
+            ClientEngagementEvent.id.desc(),
+        )
+        .offset((page - 1) * page_size)
+        .limit(page_size)
     )
 
     rows = result.all()
 
-    return [
+    activities = [
         {
             "id": event.id,
             "contact_id": contact.id,
@@ -221,6 +231,14 @@ async def get_recent_activity(
         }
         for event, contact in rows
     ]
+
+    return {
+        "activities": activities,
+        "total": total,
+        "page": page,
+        "page_size": page_size,
+        "total_pages": total_pages,
+    }
 
 
 # =========================================================
