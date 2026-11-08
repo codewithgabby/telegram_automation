@@ -12,6 +12,8 @@ from app.services.contact_service import (
     disable_follow_ups,
 )
 
+from app.services.engagement_event_service import record_engagement_event
+
 router = APIRouter(
     prefix="/admin/contacts",
     tags=["Contact Management"],
@@ -245,10 +247,23 @@ async def update_contact_follow_ups(
 ):
     contact = await get_locked_contact(db, contact_id)
 
+    previous_status = contact.follow_up_enabled
+
     if not data.enabled:
         await disable_follow_ups(db, contact)
 
     else:
+        if not previous_status:
+            await record_engagement_event(
+                db=db,
+                contact_id=contact.id,
+                event_type="followups_enabled",
+                event_source="admin",
+                previous_value="disabled",
+                new_value="enabled",
+                description="Admin enabled automated follow-ups for this client.",
+            )
+
         contact.follow_up_enabled = True
         await db.commit()
 

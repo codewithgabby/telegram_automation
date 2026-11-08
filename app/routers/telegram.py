@@ -39,6 +39,8 @@ from app.services.webhook_event_service import (
     fail_webhook_event,
 )
 
+from app.services.engagement_event_service import record_engagement_event
+
 load_dotenv()
 
 logger = logging.getLogger(__name__)
@@ -362,6 +364,20 @@ async def handle_business_callback(
 
     if callback.data == "followup_not_now":
         follow_up.response = "not_now"
+
+        await record_engagement_event(
+            db=db,
+            contact_id=contact.id,
+            event_type="followup_not_now",
+            event_source="telegram",
+            previous_value=None,
+            new_value="not_now",
+            description="Client selected Not right now on the automated follow-up.",
+            metadata={
+                "follow_up_id": follow_up.id,
+            },
+        )
+
         await db.commit()
 
         await answer_callback_query(
@@ -372,6 +388,20 @@ async def handle_business_callback(
         return {"ok": True, "message": "Not now response recorded"}
 
     follow_up.response = "interested"
+
+    await record_engagement_event(
+        db=db,
+        contact_id=contact.id,
+        event_type="followup_interested",
+        event_source="telegram",
+        previous_value=None,
+        new_value="interested",
+        description="Client expressed interest in the Personalized Strategy Session.",
+        metadata={
+            "follow_up_id": follow_up.id,
+        },
+    )
+
     await db.commit()
 
     await answer_callback_query(

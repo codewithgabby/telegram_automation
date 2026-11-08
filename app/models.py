@@ -325,13 +325,11 @@ class ClientEngagementEvent(Base):
     contact_id: Mapped[int] = mapped_column(
         ForeignKey("telegram_contacts.id", ondelete="CASCADE"),
         nullable=False,
-        index=True,
     )
 
     event_type: Mapped[str] = mapped_column(
         String(50),
         nullable=False,
-        index=True,
     )
 
     previous_value: Mapped[str | None] = mapped_column(

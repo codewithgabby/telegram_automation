@@ -12,6 +12,8 @@ from app.services.telegram_service import (
 )
 from app.services.webhook_event_service import recover_stale_webhook_events
 
+from app.services.engagement_event_service import record_engagement_event
+
 logger = logging.getLogger(__name__)
 
 CHECK_INTERVAL = 60
@@ -259,6 +261,17 @@ async def process_follow_up(follow_up_id: int) -> None:
             follow_up.status = "sent"
             follow_up.sent_at = utc_now()
             follow_up.last_error = None
+
+            await record_engagement_event(
+                db=db,
+                contact_id=contact.id,
+                event_type="followup_sent",
+                event_source="automation",
+                description="Automated 12-hour follow-up successfully sent to the client.",
+                metadata={
+                    "follow_up_id": follow_up.id,
+                },
+           )
 
             await db.commit()
 

@@ -5,6 +5,7 @@ from sqlalchemy.ext.asyncio import AsyncSession
 
 from app.models import TelegramContact, ClientFollowUp
 
+from app.services.engagement_event_service import record_engagement_event
 
 def utc_now() -> datetime:
     return datetime.now(timezone.utc)
@@ -45,6 +46,15 @@ async def create_contact(
     )
 
     db.add(contact)
+    await db.flush()
+
+    await record_engagement_event(
+        db=db,
+        contact_id=contact.id,
+        event_type="new_enquiry",
+        event_source="telegram",
+        description="New client enquiry received through Telegram Business.",
+    )
     await db.commit()
     await db.refresh(contact)
 
@@ -137,6 +147,22 @@ async def complete_welcome_delivery(
         )
         db.add(follow_up)
 
+        await record_engagement_event(
+            db=db,
+            contact_id=locked_contact.id,
+            event_type="followup_scheduled",
+            event_source="automation",
+            description="A follow-up was scheduled for 12 hours after welcome delivery.",
+        )
+
+    await record_engagement_event(
+        db=db,
+        contact_id=locked_contact.id,
+        event_type="welcome_delivered",
+        event_source="telegram",
+        description="Welcome message successfully delivered to the client.",
+    )
+
     await db.commit()
     await db.refresh(follow_up)
 
@@ -173,6 +199,14 @@ async def record_incoming_message(
     locked_contact.last_incoming_message_at = now
     locked_contact.last_seen_at = now.replace(tzinfo=None)
 
+    await record_engagement_event(
+        db=db,
+        contact_id=locked_contact.id,
+        event_type="client_replied",
+        event_source="telegram",
+        description="Client sent an incoming Telegram message.",
+    )
+
     result = await db.execute(
         select(ClientFollowUp)
         .where(
@@ -197,8 +231,20 @@ async def update_payment_status(
     contact: TelegramContact,
     payment_status: str,
 ) -> None:
-    # The admin router already locks this contact.
+    previous_status = contact.payment_status
+
     contact.payment_status = payment_status
+
+    if previous_status != payment_status and payment_status == "paid":
+        await record_engagement_event(
+            db=db,
+            contact_id=contact.id,
+            event_type="payment_received",
+            event_source="admin",
+            previous_value=previous_status,
+            new_value=payment_status,
+            description="Client payment marked as received by admin.",
+        )
 
     if payment_status == "paid":
         await cancel_pending_follow_up(db, contact.id)
@@ -211,8 +257,32 @@ async def update_session_status(
     contact: TelegramContact,
     session_status: str,
 ) -> None:
-    # The admin router already locks this contact.
+    previous_status = contact.session_status
+
     contact.session_status = session_status
+
+    if previous_status != session_status:
+        if session_status == "booked":
+            await record_engagement_event(
+                db=db,
+                contact_id=contact.id,
+                event_type="session_booked",
+                event_source="admin",
+                previous_value=previous_status,
+                new_value=session_status,
+                description="Client strategy session marked as booked by admin.",
+            )
+
+        elif session_status == "completed":
+            await record_engagement_event(
+                db=db,
+                contact_id=contact.id,
+                event_type="session_completed",
+                event_source="admin",
+                previous_value=previous_status,
+                new_value=session_status,
+                description="Client strategy session marked as completed by admin.",
+            )
 
     if session_status in ("booked", "completed"):
         await cancel_pending_follow_up(db, contact.id)
@@ -225,6 +295,17 @@ async def disable_follow_ups(
     contact: TelegramContact,
 ) -> None:
     # The admin router already locks this contact.
+    if contact.follow_up_enabled:
+        await record_engagement_event(
+            db=db,
+            contact_id=contact.id,
+            event_type="followups_disabled",
+            event_source="admin",
+            previous_value="enabled",
+            new_value="disabled",
+            description="Admin disabled automated follow-ups for this client.",
+        )
+
     contact.follow_up_enabled = False
 
     await cancel_pending_follow_up(db, contact.id)
