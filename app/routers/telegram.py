@@ -1,5 +1,7 @@
 import os
 import logging
+import re
+
 from datetime import datetime, timedelta, timezone
 
 from dotenv import load_dotenv
@@ -7,8 +9,13 @@ from fastapi import APIRouter, Depends, Header, HTTPException
 from sqlalchemy import select
 from sqlalchemy.ext.asyncio import AsyncSession
 
+from app.models import (
+    ClientFollowUp,
+    StrategyBooking,
+    TelegramContact,
+)
+
 from app.database import get_db
-from app.models import ClientFollowUp
 from app.schemas.telegram import TelegramUpdate, GroupMessage
 
 from app.services.contact_service import (
@@ -29,6 +36,10 @@ from app.services.telegram_service import (
 from app.services.group_telegram_service import (
     get_group_chat_member,
     send_group_message,
+)
+
+from app.services.strategy_admin_notification_service import (
+    queue_admin_notification,
 )
 
 from app.services.faq_service import find_matching_faqs
@@ -151,6 +162,191 @@ async def telegram_webhook(
         ) from exc
 
 
+# =========================================================
+# STRATEGY BOOKING REFERENCE
+# =========================================================
+
+
+BOOKING_REFERENCE_PATTERN = re.compile(
+    r"^Booking reference:\s*(GJ-[A-F0-9]{10})\s*$",
+    re.IGNORECASE | re.MULTILINE,
+)
+
+
+def extract_booking_reference(message_text: str | None) -> str | None:
+    if not message_text:
+        return None
+
+    match = BOOKING_REFERENCE_PATTERN.search(message_text)
+
+    if not match:
+        return None
+
+    return match.group(1).upper()
+
+
+async def associate_booking_with_contact(
+    db: AsyncSession,
+    booking_reference: str,
+    contact: TelegramContact,
+) -> str:
+    """Associate one valid, unpaid booking with the Telegram contact."""
+
+    result = await db.execute(
+        select(StrategyBooking)
+        .where(StrategyBooking.booking_reference == booking_reference)
+        .with_for_update()
+    )
+
+    booking = result.scalar_one_or_none()
+
+    if booking is None:
+        return "booking_not_found"
+
+    if booking.status != "pending_payment":
+        return "booking_not_pending"
+
+    if booking.telegram_contact_id not in (None, contact.id):
+        logger.warning(
+            "Booking %s is already associated with another Telegram contact",
+            booking_reference,
+        )
+        return "booking_already_associated"
+
+    booking.telegram_contact_id = contact.id
+
+    await db.commit()
+
+    logger.info(
+        "Associated strategy booking %s with Telegram contact %s",
+        booking_reference,
+        contact.id,
+    )
+
+    return "booking_associated"
+
+
+# =========================================================
+# OWNER PAYMENT APPROVAL
+# =========================================================
+
+
+async def handle_owner_payment_approval(
+    message,
+    db: AsyncSession,
+    calendly_url: str,
+) -> dict:
+    """Approve exactly one pending booking in the current Telegram chat."""
+
+    contact_result = await db.execute(
+        select(TelegramContact).where(
+            TelegramContact.chat_id == message.chat.id,
+            TelegramContact.business_connection_id == message.business_connection_id,
+        )
+    )
+
+    contacts = contact_result.scalars().all()
+
+    if len(contacts) != 1:
+        logger.warning(
+            "Cannot identify one Telegram contact for approval in chat %s",
+            message.chat.id,
+        )
+
+        return {
+            "ok": True,
+            "message": (
+                "Payment approval not processed: " "contact is missing or ambiguous"
+            ),
+        }
+
+    contact = contacts[0]
+
+    booking_result = await db.execute(
+        select(StrategyBooking)
+        .where(
+            StrategyBooking.telegram_contact_id == contact.id,
+            StrategyBooking.status == "pending_payment",
+        )
+        .with_for_update()
+    )
+
+    bookings = booking_result.scalars().all()
+
+    if len(bookings) != 1:
+        logger.warning(
+            "Payment approval blocked for contact %s: found %s pending bookings",
+            contact.id,
+            len(bookings),
+        )
+
+        return {
+            "ok": True,
+            "message": (
+                "Payment approval not processed: "
+                "exactly one pending booking is required"
+            ),
+        }
+
+    booking = bookings[0]
+
+    reply = (
+        "YOUR PAYMENT HAS BEEN APPROVED, THANK YOU.\n\n"
+        "You can now schedule your consultation using the link below:\n\n"
+        f"{calendly_url}\n\n"
+        "Please note that your consultation will take place here "
+        "on Telegram, not WhatsApp.\n\n"
+        "Thank you."
+    )
+
+    # Send the customer notification before committing approval.
+    # If Telegram rejects the message, the booking remains pending.
+
+    await send_business_message(
+        business_connection_id=message.business_connection_id,
+        chat_id=message.chat.id,
+        text=reply,
+    )
+
+    booking.status = "payment_approved"
+
+    admin_message = (
+        "STRATEGY SESSION PAYMENT APPROVED\n\n"
+        f"Booking reference: {booking.booking_reference}\n"
+        f"Package: {booking.package_name}\n"
+        f"Amount: ₦{booking.amount_ngn:,}\n"
+        f"Sessions: {booking.session_count}\n"
+        "Payment status: APPROVED\n"
+        "Approval source: Telegram Business"
+    )
+
+    await queue_admin_notification(
+        db=db,
+        event_key=f"strategy-payment-approved:{booking.id}",
+        event_type="payment_approved",
+        message=admin_message,
+    )
+
+    await db.commit()
+
+    logger.info(
+        "Booking %s approved and Calendly reply sent to Telegram chat %s",
+        booking.booking_reference,
+        message.chat.id,
+    )
+
+    return {
+        "ok": True,
+        "message": "Payment approved and Calendly reply sent",
+        "booking_reference": booking.booking_reference,
+    }
+
+
+# =========================================================
+# BUSINESS MESSAGE PROCESSING
+# =========================================================
+
+
 async def process_business_update(
     update: TelegramUpdate,
     db: AsyncSession,
@@ -159,22 +355,72 @@ async def process_business_update(
         return await handle_business_callback(update, db)
 
     if not update.business_message:
-        return {"ok": True, "message": "Update ignored"}
+        return {
+            "ok": True,
+            "message": "Update ignored",
+        }
 
     message = update.business_message
 
     try:
         connection = await get_business_connection(message.business_connection_id)
+
         business_user_id = connection["result"]["user"]["id"]
 
     except Exception as exc:
         logger.exception("Could not verify Telegram Business connection")
+
         raise RuntimeError("Business connection unavailable") from exc
 
-    if message.from_.id == business_user_id:
-        return {"ok": True, "message": "Business owner message ignored"}
+    # -----------------------------------------------------
+    # OWNER APPROVAL MESSAGE
+    # -----------------------------------------------------
 
-    contact = await get_contact(db, message.from_.id)
+    if message.from_.id == business_user_id:
+
+        approval_phrase = "YOUR PAYMENT HAS BEEN APPROVED, THANK YOU."
+
+        if (message.text or "").strip().upper() != approval_phrase:
+            return {
+                "ok": True,
+                "message": "Business owner message ignored",
+            }
+
+        details = connection.get("result", {})
+        rights = details.get("rights") or {}
+
+        if not details.get("is_enabled") or not rights.get("can_reply"):
+            logger.warning("Telegram Business cannot reply to this conversation")
+
+            return {
+                "ok": True,
+                "message": "Business reply permission unavailable",
+            }
+
+        calendly_url = os.getenv("CALENDLY_BOOKING_URL")
+
+        if not calendly_url:
+            logger.error("CALENDLY_BOOKING_URL is not configured")
+
+            return {
+                "ok": True,
+                "message": "Calendly URL is not configured",
+            }
+
+        return await handle_owner_payment_approval(
+            message=message,
+            db=db,
+            calendly_url=calendly_url,
+        )
+
+    # -----------------------------------------------------
+    # CUSTOMER MESSAGE
+    # -----------------------------------------------------
+
+    contact = await get_contact(
+        db,
+        message.from_.id,
+    )
 
     if not contact:
         contact = await create_contact(
@@ -188,14 +434,45 @@ async def process_business_update(
         )
 
     # Keep the latest Telegram contact information.
+
     contact.chat_id = message.chat.id
     contact.business_connection_id = message.business_connection_id
     contact.username = message.from_.username
     contact.first_name = message.from_.first_name
     contact.last_name = message.from_.last_name
 
-    # Attempt welcome delivery only when the contact is pending.
+    # -----------------------------------------------------
+    # STRATEGY SESSION PAYMENT NOTIFICATION
+    # -----------------------------------------------------
+
+    # The booking reference identifies the booking.
+    # It does NOT approve payment.
+    # Gabriel must manually verify the bank transfer.
+
+    booking_reference = extract_booking_reference(message.text)
+
+    association_result = None
+
+    if booking_reference:
+        association_result = await associate_booking_with_contact(
+            db=db,
+            booking_reference=booking_reference,
+            contact=contact,
+        )
+
+        if association_result != "booking_associated":
+            logger.info(
+                "Booking notification from contact %s was not associated: %s",
+                contact.id,
+                association_result,
+            )
+
+    # -----------------------------------------------------
+    # EXISTING WELCOME AUTOMATION
+    # -----------------------------------------------------
+
     if contact.welcome_status == "pending":
+
         reserved = await begin_welcome_delivery(
             db=db,
             contact=contact,
@@ -205,8 +482,9 @@ async def process_business_update(
         if not reserved:
             return {
                 "ok": True,
-                "message": "Welcome delivery was already attempted or reserved",
+                "message": ("Welcome delivery was already attempted or reserved"),
                 "contact_id": contact.id,
+                "booking_association": association_result,
             }
 
         try:
@@ -223,8 +501,9 @@ async def process_business_update(
 
             return {
                 "ok": True,
-                "message": "Welcome message successfully sent and recorded",
+                "message": ("Welcome message successfully sent and recorded"),
                 "contact_id": contact.id,
+                "booking_association": association_result,
             }
 
         except Exception as exc:
@@ -236,8 +515,10 @@ async def process_business_update(
                     contact=contact,
                     error=str(exc),
                 )
+
             except Exception:
                 await db.rollback()
+
                 logger.exception(
                     "Could not record failed welcome delivery for contact %s",
                     contact.id,
@@ -252,10 +533,12 @@ async def process_business_update(
                 "Welcome delivery failed or could not be confirmed"
             ) from exc
 
-    # Existing contacts who have already received their welcome
-    # have now sent another message. Record their reply and cancel
-    # any pending follow-up.
+    # -----------------------------------------------------
+    # EXISTING CONTACT REPLY
+    # -----------------------------------------------------
+
     if contact.welcome_status == "sent":
+
         await record_incoming_message(
             db=db,
             contact=contact,
@@ -265,14 +548,17 @@ async def process_business_update(
             "ok": True,
             "message": "Existing contact reply recorded",
             "contact_id": contact.id,
+            "booking_association": association_result,
         }
 
-    # Sending or failed contacts must not receive an automatic
-    # duplicate welcome message. However, record their new activity.
+    # -----------------------------------------------------
+    # WELCOME DELIVERY REQUIRES REVIEW
+    # -----------------------------------------------------
+
     logger.warning(
         "Welcome delivery requires review for contact %s. Status: %s",
         contact.id,
-         contact.welcome_status,
+        contact.welcome_status,
     )
 
     await record_incoming_message(
@@ -282,10 +568,10 @@ async def process_business_update(
 
     return {
         "ok": True,
-        "message": "Incoming activity recorded; welcome delivery requires review",
+        "message": ("Incoming activity recorded; " "welcome delivery requires review"),
         "contact_id": contact.id,
+        "booking_association": association_result,
     }
-
 
 # =========================================================
 # BUSINESS FOLLOW-UP BUTTON CALLBACKS
@@ -299,7 +585,10 @@ async def handle_business_callback(
     callback = update.callback_query
 
     if not callback:
-        return {"ok": True, "message": "Callback ignored"}
+        return {
+            "ok": True,
+            "message": "Callback ignored",
+        }
 
     if callback.data not in (
         "followup_interested",
@@ -309,16 +598,27 @@ async def handle_business_callback(
             callback_query_id=callback.id,
             text="This action is not recognised.",
         )
-        return {"ok": True, "message": "Unknown callback"}
 
-    contact = await get_contact(db, callback.from_.id)
+        return {
+            "ok": True,
+            "message": "Unknown callback",
+        }
+
+    contact = await get_contact(
+        db,
+        callback.from_.id,
+    )
 
     if not contact:
         await answer_callback_query(
             callback_query_id=callback.id,
             text="We couldn't find your conversation.",
         )
-        return {"ok": True, "message": "Contact not found"}
+
+        return {
+            "ok": True,
+            "message": "Contact not found",
+        }
 
     callback_business_connection_id = (
         callback.message.business_connection_id if callback.message else None
@@ -332,6 +632,7 @@ async def handle_business_callback(
             callback_query_id=callback.id,
             text="This conversation could not be verified.",
         )
+
         return {
             "ok": True,
             "message": "Business connection validation failed",
@@ -353,16 +654,25 @@ async def handle_business_callback(
             callback_query_id=callback.id,
             text="This follow-up is no longer active.",
         )
-        return {"ok": True, "message": "No active follow-up"}
+
+        return {
+            "ok": True,
+            "message": "No active follow-up",
+        }
 
     if follow_up.response is not None:
         await answer_callback_query(
             callback_query_id=callback.id,
             text="We've already recorded your response. Thank you!",
         )
-        return {"ok": True, "message": "Response already recorded"}
+
+        return {
+            "ok": True,
+            "message": "Response already recorded",
+        }
 
     if callback.data == "followup_not_now":
+
         follow_up.response = "not_now"
 
         await record_engagement_event(
@@ -372,7 +682,9 @@ async def handle_business_callback(
             event_source="telegram",
             previous_value=None,
             new_value="not_now",
-            description="Client selected Not right now on the automated follow-up.",
+            description=(
+                "Client selected Not right now " "on the automated follow-up."
+            ),
             metadata={
                 "follow_up_id": follow_up.id,
             },
@@ -385,7 +697,10 @@ async def handle_business_callback(
             text="No problem. Thank you for letting us know!",
         )
 
-        return {"ok": True, "message": "Not now response recorded"}
+        return {
+            "ok": True,
+            "message": "Not now response recorded",
+        }
 
     follow_up.response = "interested"
 
@@ -396,7 +711,9 @@ async def handle_business_callback(
         event_source="telegram",
         previous_value=None,
         new_value="interested",
-        description="Client expressed interest in the Personalized Strategy Session.",
+        description=(
+            "Client expressed interest in the " "Personalized Strategy Session."
+        ),
         metadata={
             "follow_up_id": follow_up.id,
         },
@@ -435,7 +752,7 @@ async def handle_business_callback(
         if not details.get("is_enabled") or not rights.get("can_reply"):
             return {
                 "ok": True,
-                "message": "Interest recorded; messaging permission unavailable",
+                "message": ("Interest recorded; messaging permission unavailable"),
             }
 
         await send_business_message(
@@ -450,7 +767,10 @@ async def handle_business_callback(
             contact.id,
         )
 
-    return {"ok": True, "message": "Interest recorded"}
+    return {
+        "ok": True,
+        "message": "Interest recorded",
+    }
 
 
 # =========================================================
@@ -468,7 +788,10 @@ async def group_telegram_webhook(
         not GROUP_TELEGRAM_WEBHOOK_SECRET
         or x_telegram_bot_api_secret_token != GROUP_TELEGRAM_WEBHOOK_SECRET
     ):
-        raise HTTPException(status_code=403, detail="Invalid group webhook secret")
+        raise HTTPException(
+            status_code=403,
+            detail="Invalid group webhook secret",
+        )
 
     claimed = await claim_webhook_event(
         db=db,
@@ -484,9 +807,15 @@ async def group_telegram_webhook(
 
     try:
         if update.message:
-            result = await handle_group_message(update.message, db)
+            result = await handle_group_message(
+                update.message,
+                db,
+            )
         else:
-            result = {"ok": True, "message": "Update ignored"}
+            result = {
+                "ok": True,
+                "message": "Update ignored",
+            }
 
         await complete_webhook_event(
             db=db,
@@ -506,6 +835,7 @@ async def group_telegram_webhook(
                 webhook_type="group",
                 error=str(exc),
             )
+
         except Exception:
             logger.exception("Could not record failed Group update")
 
@@ -530,10 +860,16 @@ async def handle_group_message(
     db: AsyncSession,
 ):
     if not message.text or not message.from_:
-        return {"ok": True, "message": "Message ignored"}
+        return {
+            "ok": True,
+            "message": "Message ignored",
+        }
 
     if message.from_.is_bot:
-        return {"ok": True, "message": "Bot message ignored"}
+        return {
+            "ok": True,
+            "message": "Bot message ignored",
+        }
 
     member = await get_group_chat_member(
         chat_id=message.chat.id,
@@ -543,7 +879,10 @@ async def handle_group_message(
     status = member["result"]["status"]
 
     if status in ["creator", "administrator"]:
-        return {"ok": True, "message": "Admin message ignored"}
+        return {
+            "ok": True,
+            "message": "Admin message ignored",
+        }
 
     matches = await find_matching_faqs(
         db=db,
@@ -551,7 +890,10 @@ async def handle_group_message(
     )
 
     if not matches:
-        return {"ok": True, "message": "No matching FAQ found"}
+        return {
+            "ok": True,
+            "message": "No matching FAQ found",
+        }
 
     top_matches = []
     seen_links = set()

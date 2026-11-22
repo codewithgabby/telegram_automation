@@ -43,6 +43,10 @@
                     <span>📊</span> Analytics
                 </a>
 
+                <a href="#strategy" class="nav-link">
+                    <span>📅</span> Strategy Website
+                </a>
+
             </nav>
 
             <div class="sidebar-footer">
@@ -205,24 +209,24 @@
             </section>
 
             <!-- ANALYTICS -->
-            
+
             <section id="analytics" class="dashboard-section">
-            
+
                 <div class="section-heading">
                     <div>
                         <h2>Client Engagement Analytics</h2>
                         <p>Monitor enquiries, client interactions and current business status.</p>
                     </div>
-            
+
                     <button id="refreshAnalyticsButton" class="primary-button">
                         ↻ Refresh Analytics
                     </button>
                 </div>
-            
+
                 <!-- DATE FILTER -->
-            
+
                 <div class="analytics-toolbar">
-            
+
                     <div>
                         <label for="analyticsPeriod">Reporting period</label>
                         <select id="analyticsPeriod">
@@ -232,67 +236,67 @@
                             <option value="custom">Custom date range</option>
                         </select>
                     </div>
-            
+
                     <div id="customDateRange" hidden>
                         <label for="analyticsStartDate">From</label>
                         <input type="date" id="analyticsStartDate">
-            
+
                         <label for="analyticsEndDate">To</label>
                         <input type="date" id="analyticsEndDate">
-            
+
                         <button id="applyAnalyticsDates" class="secondary-button">
                             Apply
                         </button>
                     </div>
-            
+
                 </div>
-            
+
                 <!-- PERFORMANCE STATISTICS -->
-            
+
                 <div class="analytics-stats-grid">
-            
+
                     <article class="stat-card">
                         <p>New Enquiries</p>
                         <h3 id="analyticsEnquiries">0</h3>
                         <span>Contacts acquired</span>
                     </article>
-            
+
                     <article class="stat-card">
                         <p>Welcome Messages</p>
                         <h3 id="analyticsWelcomes">0</h3>
                         <span>Successfully delivered</span>
                     </article>
-            
+
                     <article class="stat-card">
                         <p>Client Replies</p>
                         <h3 id="analyticsReplies">0</h3>
                         <span>Contacts who responded</span>
                     </article>
-            
+
                     <article class="stat-card">
                         <p>Interested Leads</p>
                         <h3 id="analyticsInterested">0</h3>
                         <span>Expressed interest</span>
                     </article>
-            
+
                     <article class="stat-card">
                         <p>Paid Clients</p>
                         <h3 id="analyticsPaid">0</h3>
                         <span>Currently marked as paid · All contacts</span>
                     </article>
-            
+
                     <article class="stat-card">
                         <p>Completed Sessions</p>
                         <h3 id="analyticsCompleted">0</h3>
                         <span>Currently marked completed · All contacts</span>
                     </article>
-            
+
                 </div>
-            
+
                 <!-- ANALYTICS CHARTS -->
-            
+
                 <div class="analytics-grid">
-            
+
                     <article class="analytics-card">
                         <h3>Enquiry Trends</h3>
                         <p>Daily enquiries over the selected period.</p>
@@ -300,7 +304,7 @@
                             <p>No analytics data available yet.</p>
                         </div>
                     </article>
-            
+
                     <article class="analytics-card">
                         <h3>Engagement & Business Status</h3>
                         <p>Period engagement alongside current client statuses.</p>
@@ -308,96 +312,495 @@
                             <p>No analytics data available yet.</p>
                         </div>
                     </article>
-            
+
                 </div>
-            
+
                 <!-- RECENT ENGAGEMENT HISTORY -->
-            
+
                 <div class="analytics-history">
-            
+
                     <div class="section-heading">
                         <div>
                             <h3>Recent Client Activity</h3>
                             <p>A chronological record of client engagement.</p>
                         </div>
                     </div>
-            
+
                     <div id="analyticsActivityList">
                         <div class="empty-state">
                             <h3>No activity records yet</h3>
                             <p>Recorded client events will appear here.</p>
                         </div>
                     </div>
-            
+
                 </div>
-            
+
             </section>
 
+                        <!-- STRATEGY SESSION WEBSITE MANAGEMENT -->
+                        
+                        <section id="strategy" class="dashboard-section">
+                        
+                            <div class="section-heading">
+                                <div>
+                                    <h2>Strategy Session Website</h2>
+                                    <p>Manage your public website, consultation packages, payment settings and bookings.</p>
+                                </div>
+                        
+                                <button id="refreshStrategyButton" class="primary-button">
+                                    ↻ Refresh
+                                </button>
+                            </div>
+                        
+                            <!-- STRATEGY TABS -->
+                        
+                            <div class="strategy-tabs">
+                                <button class="strategy-tab active" data-strategy-tab="packages">
+                                    Packages
+                                </button>
+                        
+                                <button class="strategy-tab" data-strategy-tab="content">
+                                    Website Content
+                                </button>
+                        
+                                <button class="strategy-tab" data-strategy-tab="settings">
+                                    Website Settings
+                                </button>
+                        
+                                <button class="strategy-tab" data-strategy-tab="bookings">
+                                    Bookings
+                                </button>
+                            </div>
+                        
+                            <div id="strategyMessage" class="strategy-message" role="status"></div>
+                        
+                            <!-- PACKAGES -->
+                        
+                            <div class="strategy-panel active" id="strategy-packages">
+                        
+                                <div class="strategy-panel-heading">
+                                    <div>
+                                        <h3>Consultation Packages</h3>
+                                        <p>Changes here are reflected on the public strategy website.</p>
+                                    </div>
+                        
+                                    <button id="addStrategyServiceButton" class="primary-button">
+                                        + Add Package
+                                    </button>
+                                </div>
+                        
+                                <div id="strategyServicesList" class="strategy-record-list">
+                                    <div class="empty-state">
+                                        <p>Packages will appear here.</p>
+                                    </div>
+                                </div>
+                        
+                            </div>
+                        
+                            <!-- WEBSITE CONTENT -->
+                        
+                            <div class="strategy-panel" id="strategy-content">
+                        
+                                <div class="strategy-panel-heading">
+                                    <div>
+                                        <h3>Website Content Sections</h3>
+                                        <p>Edit the text sections displayed on your public website.</p>
+                                    </div>
+                        
+                                    <button id="addStrategyContentButton" class="primary-button">
+                                        + Add Section
+                                    </button>
+                                </div>
+                        
+                                <div id="strategyContentList" class="strategy-record-list">
+                                    <div class="empty-state">
+                                        <p>Website content will appear here.</p>
+                                    </div>
+                                </div>
+                        
+                            </div>
+                        
+                            <!-- WEBSITE SETTINGS -->
+                        
+                            <div class="strategy-panel" id="strategy-settings">
+                        
+                                <div class="strategy-panel-heading">
+                                    <div>
+                                        <h3>Website Settings</h3>
+                                        <p>Manage your public website identity, contact information and other website settings.</p>
+                                    </div>
+                                </div>
+                        
+                                <div id="strategySettingsList" class="strategy-record-list">
+                                    <div class="empty-state">
+                                        <p>Website settings will appear here.</p>
+                                    </div>
+                                </div>
+                        
+                            </div>
+                        
+                            <!-- BOOKINGS -->
+                        
+                            <div class="strategy-panel" id="strategy-bookings">
+                        
+                                <div class="strategy-panel-heading">
+                                    <div>
+                                        <h3>Strategy Session Bookings</h3>
+                                        <p>Review customer bookings and their payment status.</p>
+                                    </div>
+                        
+                                    <button id="refreshStrategyBookingsButton" class="secondary-button">
+                                        Refresh Bookings
+                                    </button>
+                                </div>
+                        
+                                <div id="strategyBookingsList" class="strategy-record-list">
+                                    <div class="empty-state">
+                                        <p>Bookings will appear here.</p>
+                                    </div>
+                                </div>
+                        
+                            </div>
+                        
+                        </section>
+                        
+                        </main>
+                        
+                        </div>
 
-        </main>
+                        <!-- STRATEGY PACKAGE MODAL -->
+                        <div class="modal-overlay" id="strategyPackageModal">
+                            <div class="modal-card">
+                                <div class="modal-header">
+                                    <div>
+                                        <h2 id="strategyPackageModalTitle">Edit Consultation Package</h2>
+                                        <p>Manage your consultation package details.</p>
+                                    </div>
+                                    <button type="button" class="close-button" id="closeStrategyPackageModal">×</button>
+                                </div>
+                        
+                                <form id="strategyPackageForm">
+                                    <input type="hidden" id="strategyPackageId">
+                                    
+                                    <div class="form-group">
+                                        <label for="strategyPackageCode">Unique package code</label>
+                                        <input type="text" id="strategyPackageCode" placeholder="e.g. single-session" required>
+                                    </div>
+                        
+                                    <div class="form-group">
+                                        <label for="strategyPackageName">Package name</label>
+                                        <input type="text" id="strategyPackageName" required>
+                                    </div>
+                        
+                                    <div class="form-group">
+                                        <label for="strategyPackageDescription">Description</label>
+                                        <textarea id="strategyPackageDescription" rows="3" required></textarea>
+                                    </div>
+                        
+                                    <div class="form-group">
+                                        <label for="strategyPackagePrice">Price (₦)</label>
+                                        <input type="number" id="strategyPackagePrice" min="1" step="1" required>
+                                    </div>
+                        
+                                    <div class="form-group">
+                                        <label for="strategyPackageSessions">Number of sessions</label>
+                                        <input type="number" id="strategyPackageSessions" min="1" required>
+                                    </div>
+                        
+                                    <div class="form-group">
+                                        <label for="strategyPackageDuration">Duration per session (minutes)</label>
+                                        <input type="number" id="strategyPackageDuration" min="1" required>
+                                    </div>
+                        
+                                    <div class="form-group">
+                                        <label for="strategyPackageFeatures">Package features (one per line)</label>
+                                        <textarea id="strategyPackageFeatures" rows="4"></textarea>
+                                    </div>
+                        
+                                    <div class="form-group">
+                                        <label for="strategyPackageOrder">Display order</label>
+                                        <input type="number" id="strategyPackageOrder" min="0" required>
+                                    </div>
+                        
+                                    <div class="form-group">
+                                        <label for="strategyPackageActive">Package status</label>
+                                        <select id="strategyPackageActive">
+                                            <option value="true">Active</option>
+                                            <option value="false">Inactive</option>
+                                        </select>
+                                    </div>
+                        
+                                    <div class="modal-actions">
+                                        <button type="button" class="secondary-button" id="cancelStrategyPackageModal">Cancel</button>
+                                        <button type="submit" class="primary-button" id="saveStrategyPackageButton">Save Package</button>
+                                    </div>
+                                </form>
+                            </div>
+                        </div>
 
-    </div>
+<!-- STRATEGY WEBSITE CONTENT MODAL -->
 
-    <!-- FAQ MODAL -->
+<div class="modal-overlay" id="strategyContentModal">
+    <div class="modal-card">
 
-    <div class="modal-overlay" id="faqModal">
-
-        <div class="modal-card">
-
-            <div class="modal-header">
-                <div>
-                    <h2 id="modalTitle">Add New FAQ</h2>
-                    <p>Provide the details for this FAQ entry.</p>
-                </div>
-
-                <button id="closeModalButton" class="close-button">×</button>
+        <div class="modal-header">
+            <div>
+                <h2 id="strategyContentModalTitle">Add Website Content</h2>
+                <p>Manage the text displayed on your public strategy website.</p>
             </div>
 
-            <form id="faqForm">
-
-                <input type="hidden" id="faqId">
-
-                <div class="form-group">
-                    <label for="faqTopic">Topic</label>
-                    <input type="text" id="faqTopic" placeholder="e.g. Study Permit Proof of Funds" required>
-                </div>
-
-                <div class="form-group">
-                    <label for="faqKeywords">Keywords</label>
-                    <textarea id="faqKeywords" rows="3" placeholder="proof of funds, POF, bank statement"
-                        required></textarea>
-                    <small>Separate each keyword with a comma.</small>
-                </div>
-
-                <div class="form-group">
-                    <label for="faqLink">Telegram Message Link</label>
-                    <input type="url" id="faqLink" placeholder="https://t.me/..." required>
-                </div>
-
-                <div class="modal-actions">
-
-                    <button type="button" id="cancelFaqButton" class="secondary-button">
-                        Cancel
-                    </button>
-
-                    <button type="submit" class="primary-button" id="saveFaqButton">
-                        Save FAQ
-                    </button>
-
-                </div>
-
-            </form>
-
+            <button type="button" class="close-button" id="closeStrategyContentModal">
+                ×
+            </button>
         </div>
 
+        <form id="strategyContentForm">
+
+            <input type="hidden" id="strategyContentId">
+
+            <div class="form-group">
+                <label for="strategyContentKey">Unique section key</label>
+                <input type="text" id="strategyContentKey" placeholder="e.g. confidentiality" required>
+                <small>
+                    Use a unique identifier for each content section.
+                    Existing section keys cannot be changed.
+                </small>
+            </div>
+
+            <div class="form-group">
+                <label for="strategyContentTitle">Heading</label>
+                <input type="text" id="strategyContentTitle" maxlength="255" required>
+            </div>
+
+            <div class="form-group">
+                <label for="strategyContentEyebrow">Supporting label (optional)</label>
+                <input type="text" id="strategyContentEyebrow" maxlength="150">
+            </div>
+
+            <div class="form-group">
+                <label for="strategyContentBody">Supporting text</label>
+                <textarea id="strategyContentBody" rows="5" maxlength="5000" required></textarea>
+            </div>
+
+            <div class="form-group">
+                <label for="strategyContentOrder">Display order</label>
+                <input type="number" id="strategyContentOrder" min="0" step="1" value="0" required>
+            </div>
+
+            <div class="form-group">
+                <label for="strategyContentActive">Section status</label>
+                <select id="strategyContentActive">
+                    <option value="true">Active</option>
+                    <option value="false">Inactive</option>
+                </select>
+            </div>
+
+            <div class="modal-actions">
+                <button type="button" class="secondary-button" id="cancelStrategyContentModal">
+                    Cancel
+                </button>
+
+                <button type="submit" class="primary-button" id="saveStrategyContentButton">
+                    Save Content
+                </button>
+            </div>
+
+        </form>
     </div>
+</div>
 
-    <script src="js/auth.js"></script>
-    <script src="js/faqs.js"></script>
-    <script src="js/contacts.js"></script>
-    <script src="js/analytics.js"></script>
-    <script src="js/app.js"></script>
+<!-- PUBLIC WEBSITE SETTINGS MODAL -->
 
-</body>
+<div class="modal-overlay" id="publicSiteSettingsModal">
+    <div class="modal-card">
 
-</html>
+        <div class="modal-header">
+            <div>
+                <h2 id="publicSiteSettingsModalTitle">Website Settings</h2>
+                <p>Manage your public website identity and contact information.</p>
+            </div>
+
+            <button type="button" class="close-button" id="closePublicSiteSettingsModal">
+                ×
+            </button>
+        </div>
+
+        <form id="publicSiteSettingsForm">
+
+            <div class="form-group">
+                <label for="publicSiteBrandName">Brand name</label>
+                <input type="text" id="publicSiteBrandName" maxlength="150" required>
+            </div>
+
+            <div class="form-group">
+                <label for="publicSiteBrandSubtitle">Brand subtitle</label>
+                <input type="text" id="publicSiteBrandSubtitle" maxlength="200" required>
+            </div>
+
+            <div class="form-group">
+                <label for="publicSiteSupportUrl">Telegram support URL</label>
+                <input type="url" id="publicSiteSupportUrl" placeholder="https://t.me/CodewithGabby" required>
+            </div>
+
+            <div class="form-group">
+                <label for="publicSiteContactLabel">Contact label</label>
+                <input type="text" id="publicSiteContactLabel" maxlength="150" required>
+            </div>
+
+            <div class="form-group">
+                <label for="publicSiteFooterName">Footer name</label>
+                <input type="text" id="publicSiteFooterName" maxlength="150" required>
+            </div>
+
+            <div class="form-group">
+                <label for="publicSiteFooterBrand">Footer brand</label>
+                <input type="text" id="publicSiteFooterBrand" maxlength="200" required>
+            </div>
+
+            <div class="form-group">
+                <label for="publicSiteFooterTagline">Footer tagline</label>
+                <textarea id="publicSiteFooterTagline" rows="3" maxlength="500" required></textarea>
+            </div>
+
+            <div class="form-group">
+                <label>
+                    <input type="checkbox" id="publicSiteIsPublic" checked>
+                    Publish these settings on the public website
+                </label>
+            </div>
+
+            <div class="modal-actions">
+                <button type="button" class="secondary-button" id="cancelPublicSiteSettingsModal">
+                    Cancel
+                </button>
+
+                <button type="submit" class="primary-button" id="savePublicSiteSettingsButton">
+                    Save Settings
+                </button>
+            </div>
+
+        </form>
+    </div>
+</div>
+
+<!-- PAYMENT BANK DETAILS MODAL -->
+
+<div class="modal-overlay" id="paymentBankDetailsModal">
+    <div class="modal-card">
+
+        <div class="modal-header">
+            <div>
+                <h2 id="paymentBankDetailsModalTitle">Payment Bank Details</h2>
+                <p>Manage the bank account customers use to make payments.</p>
+            </div>
+
+            <button type="button" class="close-button" id="closePaymentBankDetailsModal">
+                ×
+            </button>
+        </div>
+
+        <form id="paymentBankDetailsForm">
+
+            <div class="form-group">
+                <label for="paymentBankName">Bank name</label>
+                <input type="text" id="paymentBankName" maxlength="150" required>
+            </div>
+
+            <div class="form-group">
+                <label for="paymentAccountName">Account name</label>
+                <input type="text" id="paymentAccountName" maxlength="150" required>
+            </div>
+
+            <div class="form-group">
+                <label for="paymentAccountNumber">Account number</label>
+                <input type="text" id="paymentAccountNumber" inputmode="numeric" maxlength="30" required>
+            </div>
+
+            <div class="form-group">
+                <label>
+                    <input type="checkbox" id="paymentBankIsPublic" checked>
+                    Publish these bank details for customer payments
+                </label>
+            </div>
+
+            <div class="modal-actions">
+                <button type="button" class="secondary-button" id="cancelPaymentBankDetailsModal">
+                    Cancel
+                </button>
+
+                <button type="submit" class="primary-button" id="savePaymentBankDetailsButton">
+                    Save Bank Details
+                </button>
+            </div>
+
+        </form>
+    </div>
+</div>
+
+                        
+                        <!-- FAQ MODAL -->
+                        
+                        <div class="modal-overlay" id="faqModal">
+                        
+                            <div class="modal-card">
+                        
+                                <div class="modal-header">
+                                    <div>
+                                        <h2 id="modalTitle">Add New FAQ</h2>
+                                        <p>Provide the details for this FAQ entry.</p>
+                                    </div>
+                        
+                                    <button id="closeModalButton" class="close-button">×</button>
+                                </div>
+                        
+                                <form id="faqForm">
+                        
+                                    <input type="hidden" id="faqId">
+                        
+                                    <div class="form-group">
+                                        <label for="faqTopic">Topic</label>
+                                        <input type="text" id="faqTopic" placeholder="e.g. Study Permit Proof of Funds" required>
+                                    </div>
+                        
+                                    <div class="form-group">
+                                        <label for="faqKeywords">Keywords</label>
+                                        <textarea id="faqKeywords" rows="3" placeholder="proof of funds, POF, bank statement"
+                                            required></textarea>
+                                        <small>Separate each keyword with a comma.</small>
+                                    </div>
+                        
+                                    <div class="form-group">
+                                        <label for="faqLink">Telegram Message Link</label>
+                                        <input type="url" id="faqLink" placeholder="https://t.me/..." required>
+                                    </div>
+                        
+                                    <div class="modal-actions">
+                        
+                                        <button type="button" id="cancelFaqButton" class="secondary-button">
+                                            Cancel
+                                        </button>
+                        
+                                        <button type="submit" class="primary-button" id="saveFaqButton">
+                                            Save FAQ
+                                        </button>
+                        
+                                    </div>
+                        
+                                </form>
+                        
+                            </div>
+                        
+                        </div>
+                        
+                        <!-- APPLICATION SCRIPTS -->
+                        
+                        <script src="js/auth.js"></script>
+                        <script src="js/faqs.js"></script>
+                        <script src="js/contacts.js"></script>
+                        <script src="js/analytics.js"></script>
+                        <script src="js/strategy.js"></script>
+                        <script src="js/app.js"></script>
+                        
+                        </body>
+                        
+                        </html>

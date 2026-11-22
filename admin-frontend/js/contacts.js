@@ -1,8 +1,10 @@
 
 "use strict";
 
-const CONTACTS_API_URL =
-    "https://telegram-automation-nlq9.onrender.com/admin/contacts";  
+// const CONTACTS_API_URL =
+    "https://telegram-automation-nlq9.onrender.com/admin/contacts";
+    
+const CONTACTS_API_URL = `${API_BASE_URL}/admin/contacts`;    
 
 const ANALYTICS_API_URL =
     CONTACTS_API_URL.replace("/admin/contacts", "/admin/analytics");    

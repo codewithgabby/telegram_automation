@@ -1,4 +1,3 @@
-
 document.addEventListener("DOMContentLoaded", () => {
 
     // MOBILE SIDEBAR
@@ -12,7 +11,7 @@ document.addEventListener("DOMContentLoaded", () => {
         });
     }
 
-    // FAQ MODAL
+    // FAQ MODAL — EXISTING BEHAVIOUR PRESERVED
 
     const faqModal = document.getElementById("faqModal");
     const addFaqButton = document.getElementById("addFaqButton");
@@ -40,9 +39,7 @@ document.addEventListener("DOMContentLoaded", () => {
     cancelFaqButton?.addEventListener("click", closeFaqModal);
 
     faqModal?.addEventListener("click", (event) => {
-        if (event.target === faqModal) {
-            closeFaqModal();
-        }
+        if (event.target === faqModal) closeFaqModal();
     });
 
     document.addEventListener("keydown", (event) => {
@@ -78,16 +75,19 @@ document.addEventListener("DOMContentLoaded", () => {
             );
         });
 
-        // Load contacts when the Client Engagement page is opened.
+        // Existing Client Engagement loader — unchanged.
         if (targetId === "contacts" && typeof loadContacts === "function") {
             loadContacts();
+        }
+
+        // New Strategy Website loader.
+        if (targetId === "strategy" && typeof loadStrategyDashboard === "function") {
+            loadStrategyDashboard();
         }
     }
 
     navLinks.forEach((link) => {
-
         link.addEventListener("click", (event) => {
-
             event.preventDefault();
 
             const targetId = link.getAttribute("href").substring(1);
@@ -95,22 +95,16 @@ document.addEventListener("DOMContentLoaded", () => {
             showDashboardSection(targetId);
 
             window.location.hash = targetId;
-
             sidebar?.classList.remove("open");
         });
-
     });
 
     const initialSection = window.location.hash.substring(1);
-
     showDashboardSection(initialSection || "overview");
 
     window.addEventListener("hashchange", () => {
-
         const targetId = window.location.hash.substring(1);
-
         showDashboardSection(targetId || "overview");
-
     });
 
 });

@@ -35,3 +35,8 @@ htmlcov/
 secrets/
 *.pem
 *.key
+# Local database backups
+*.dump
+
+# Customer-uploaded files and local storage
+/storage/

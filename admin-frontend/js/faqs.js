@@ -1,7 +1,9 @@
 
 "use strict";
 
-const FAQ_API_URL = "https://telegram-automation-nlq9.onrender.com/admin/faqs";
+// const FAQ_API_URL = "https://telegram-automation-nlq9.onrender.com/admin/faqs";
+
+const FAQ_API_URL = `${API_BASE_URL}/admin/faqs`;
 
 const FAQ_ACCESS_TOKEN_KEY = "admin_access_token";
 
