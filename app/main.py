@@ -17,8 +17,6 @@ from app.routers.analytics import router as analytics_router
 from app.routers.strategy_bookings import router as strategy_bookings_router
 from app.routers import strategy_content
 
-
-
 from app.routers.strategy_customer_telegram import (
     router as strategy_customer_telegram_router,
 )
@@ -92,19 +90,27 @@ app = FastAPI(
 )
 
 
-frontend_origins = os.getenv(
-    "FRONTEND_ORIGINS",
-    "http://localhost:5500,http://127.0.0.1:5500",
-).split(",")
+# CORS CONFIGURATION
 
-allowed_origins = [origin.strip() for origin in frontend_origins if origin.strip()]
-
-for origin in (
+default_origins = [
+    "http://localhost:5500",
+    "http://127.0.0.1:5500",
     "http://localhost:5173",
     "http://127.0.0.1:5173",
-):
-    if origin not in allowed_origins:
-        allowed_origins.append(origin)
+    "https://autotelegram.netlify.app",
+    "https://strategysession.netlify.app",
+]
+
+environment_origins = os.getenv("FRONTEND_ORIGINS", "").split(",")
+
+allowed_origins = list(
+    dict.fromkeys(
+        origin.strip()
+        for origin in default_origins + environment_origins
+        if origin.strip()
+    )
+)
+
 
 app.add_middleware(
     CORSMiddleware,
@@ -121,6 +127,8 @@ app.add_middleware(
     allow_headers=["Content-Type", "Authorization"],
 )
 
+
+# APPLICATION ROUTERS
 
 app.include_router(telegram_router)
 app.include_router(faq_router)
